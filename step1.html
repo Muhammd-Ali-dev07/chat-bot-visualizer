@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 1: Text Preprocessing - WorldOS Linear Algebra Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #00bfa5;
+            --bg-dark: #1e1e2f;
+            --bg-darker: #151525;
+            --text-light: #f1f1f1;
+            --window-bg: rgba(42, 42, 58, 0.95);
+            --accent-color: #ff5f57;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(30, 30, 40, 0.8);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo span {
+            margin-left: 10px;
+        }
+
+        .steps-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-btn {
+            padding: 8px 15px;
+            background: rgba(74, 108, 247, 0.2);
+            border: 1px solid rgba(74, 108, 247, 0.5);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .step-btn:hover {
+            background: rgba(74, 108, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .step-btn.active {
+            background: rgba(74, 108, 247, 0.6);
+            box-shadow: 0 4px 10px rgba(74, 108, 247, 0.3);
+        }
+
+        main {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .visualization {
+            flex: 2;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .explanation {
+            flex: 1;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .math-formula {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary-color);
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .interactive-area {
+            flex: 1;
+            position: relative;
+            background: rgba(25, 25, 35, 0.6);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.primary {
+            background: rgba(74, 108, 247, 0.4);
+        }
+
+        .control-btn.primary:hover {
+            background: rgba(74, 108, 247, 0.6);
+        }
+
+        input[type="text"] {
+            padding: 8px 15px;
+            background: rgba(25, 25, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .progress-step {
+            display: flex;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .progress-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            background: rgba(30, 30, 40, 0.6);
+            padding: 15px;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+        }
+
+        .token {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 3px;
+            border-radius: 4px;
+            background: rgba(74, 108, 247, 0.3);
+            animation: fadeIn 0.5s;
+        }
+
+        .token.removed {
+            background: rgba(255, 95, 87, 0.3);
+            text-decoration: line-through;
+        }
+
+        .token.important {
+            background: rgba(0, 191, 165, 0.3);
+            font-weight: bold;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes highlight {
+            0%, 100% {
+                background: rgba(74, 108, 247, 0.3);
+            }
+            50% {
+                background: rgba(74, 108, 247, 0.7);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(30, 30, 40, 0.8);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .next-step {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-decoration: none;
+            width: fit-content;
+        }
+
+        .next-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 191, 165, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            🧠 <span>WorldOS Linear Algebra Visualizer</span>
+        </div>
+        <div class="steps-nav">
+            <a href="step1.html" class="step-btn active">1. Text Preprocessing</a>
+            <a href="step2.html" class="step-btn">2. Vector Representation</a>
+            <a href="step3.html" class="step-btn">3. TF-IDF Weighting</a>
+            <a href="step4.html" class="step-btn">4. Dimension Reduction</a>
+            <a href="step5.html" class="step-btn">5. Cosine Similarity</a>
+            <a href="step6.html" class="step-btn">6. Response Selection</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="visualization">
+            <div class="controls">
+                <input type="text" id="user-input" placeholder="Type a message to process..." value="How does linear algebra help in understanding text?">
+                <button id="process-btn" class="control-btn primary">Process Text</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            <div class="interactive-area" id="interactive-area">
+                <div class="progress-step" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Original Input</div>
+                        <div id="original-text"></div>
+                    </div>
+                </div>
+                <div class="progress-step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Convert to Lowercase</div>
+                        <div id="lowercase-text"></div>
+                    </div>
+                </div>
+                <div class="progress-step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Remove Punctuation</div>
+                        <div id="punctuation-text"></div>
+                    </div>
+                </div>
+                <div class="progress-step" id="step4">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Tokenize Words</div>
+                        <div id="tokenize-text"></div>
+                    </div>
+                </div>
+                <div class="progress-step" id="step5">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Remove Stopwords & Lemmatize</div>
+                        <div id="stopwords-text"></div>
+                    </div>
+                </div>
+                <div class="progress-step" id="step6">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Final Preprocessed Result</div>
+                        <div id="final-text"></div>
+                    </div>
+                </div>
+            </div>
+            <a href="step2.html" class="next-step">Next Step: Vector Representation →</a>
+        </section>
+
+        <section class="explanation">
+            <h2>Text Preprocessing</h2>
+            <p>
+                In the WorldOS AI system, the first step in processing your message is text preprocessing. 
+                This critical phase transforms raw text into a standardized format that can be efficiently 
+                analyzed using linear algebra techniques.
+            </p>
+            
+            <p>
+                The main goal of preprocessing is to reduce noise and extract meaningful features from the text.
+                This process includes several steps:
+            </p>
+            
+            <h3>1. Lowercase Conversion</h3>
+            <p>
+                Converting all text to lowercase ensures that words like "Hello" and "hello" are treated as the
+                same term, eliminating case sensitivity as a source of variation.
+            </p>
+            
+            <h3>2. Punctuation Removal</h3>
+            <p>
+                Punctuation marks are removed as they typically don't contribute to the semantic meaning of the text
+                and would otherwise create unnecessary dimensions in our vector space.
+            </p>
+            
+            <h3>3. Tokenization</h3>
+            <p>
+                The text is split into individual words or "tokens" which will become the basic units of analysis.
+                Each unique token will eventually correspond to a dimension in our vector space.
+            </p>
+            
+            <div class="math-formula">
+                Text → [token₁, token₂, token₃, ..., tokenₙ]
+            </div>
+            
+            <h3>4. Stopword Removal</h3>
+            <p>
+                Common words like "the," "is," or "and" (called stopwords) are removed since they appear in almost
+                all texts and generally don't carry significant meaning for understanding the core intent.
+            </p>
+            
+            <h3>5. Lemmatization</h3>
+            <p>
+                Words are reduced to their base or dictionary form (lemma). For example, "running," "runs," and "ran"
+                would all be converted to "run". This process helps group different forms of the same word together.
+            </p>
+            
+            <div class="math-formula">
+                lemmatize(token) → base_form
+            </div>
+            
+            <h3>Linear Algebra Connection</h3>
+            <p>
+                While preprocessing itself doesn't directly use linear algebra operations, it prepares the text
+                for vector representation. Each unique processed token will become a basis vector in a high-dimensional
+                vector space, creating what's known as a "bag-of-words" model or more sophisticated "vector space model."
+            </p>
+            
+            <p>
+                The quality of preprocessing directly impacts the effectiveness of all subsequent linear algebra operations
+                in the WorldOS system. By reducing noise and standardizing the input, we can create more meaningful
+                vector representations for accurate intent matching.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        WorldOS Linear Algebra Visualizer - Created for Linear Algebra Project Presentation
+    </footer>
+
+    <script>
+        // Constants for demonstration
+        const stopWords = new Set(['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've",
+            "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 
+            "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 
+            'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 
+            'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 
+            'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 
+            'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 
+            'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 
+            'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 
+            'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 
+            't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 
+            've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', 
+            "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', 
+            "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', 
+            "weren't", 'won', "won't", 'wouldn', "wouldn't"]);
+
+        // Simple lemmatization dictionary for demonstration
+        const lemmatization = {
+            'running': 'run',
+            'runs': 'run',
+            'ran': 'run',
+            'says': 'say',
+            'said': 'say',
+            'saying': 'say',
+            'goes': 'go',
+            'went': 'go',
+            'going': 'go',
+            'gone': 'go',
+            'makes': 'make',
+            'made': 'make',
+            'making': 'make',
+            'takes': 'take',
+            'took': 'take',
+            'taking': 'take',
+            'sees': 'see',
+            'saw': 'see',
+            'seeing': 'see',
+            'comes': 'come',
+            'came': 'come',
+            'coming': 'come',
+            'thinks': 'think',
+            'thought': 'think',
+            'thinking': 'think',
+            'knows': 'know',
+            'knew': 'know',
+            'knowing': 'know',
+            'looking': 'look',
+            'looked': 'look',
+            'helps': 'help',
+            'helped': 'help',
+            'helping': 'help',
+            'uses': 'use',
+            'used': 'use',
+            'using': 'use',
+            'understanding': 'understand',
+            'understood': 'understand',
+            'algebras': 'algebra',
+            'matrices': 'matrix',
+            'vectors': 'vector',
+            'spaces': 'space',
+        };
+
+        // Get DOM elements
+        const userInput = document.getElementById('user-input');
+        const processBtn = document.getElementById('process-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const originalText = document.getElementById('original-text');
+        const lowercaseText = document.getElementById('lowercase-text');
+        const punctuationText = document.getElementById('punctuation-text');
+        const tokenizeText = document.getElementById('tokenize-text');
+        const stopwordsText = document.getElementById('stopwords-text');
+        const finalText = document.getElementById('final-text');
+        const steps = document.querySelectorAll('.progress-step');
+
+        // Function to reset visualization
+        function resetVisualization() {
+            steps.forEach(step => {
+                step.classList.remove('visible');
+            });
+            originalText.innerHTML = '';
+            lowercaseText.innerHTML = '';
+            punctuationText.innerHTML = '';
+            tokenizeText.innerHTML = '';
+            stopwordsText.innerHTML = '';
+            finalText.innerHTML = '';
+        }
+
+        // Function to lemmatize a word
+        function lemmatize(word) {
+            return lemmatization[word] || word;
+        }
+
+        // Function to process text and animate results
+        function processText() {
+            resetVisualization();
+            
+            const text = userInput.value || "How does linear algebra help in understanding text?";
+            
+            // Step 1: Show original text
+            originalText.innerHTML = text.split(' ').map(word => `<span class="token">${word}</span>`).join(' ');
+            steps[0].classList.add('visible');
+            
+            // Wait and show next step
+            setTimeout(() => {
+                // Step 2: Convert to lowercase
+                const lowercaseResult = text.toLowerCase();
+                lowercaseText.innerHTML = lowercaseResult.split(' ').map(word => `<span class="token">${word}</span>`).join(' ');
+                steps[1].classList.add('visible');
+                
+                // Wait and show next step
+                setTimeout(() => {
+                    // Step 3: Remove punctuation
+                    const punctuationResult = lowercaseResult.replace(/[^\w\s]/g, '');
+                    
+                    // Highlight the difference
+                    let punctuationHtml = '';
+                    let i = 0, j = 0;
+                    
+                    while (i < lowercaseResult.length) {
+                        if (/[^\w\s]/.test(lowercaseResult[i])) {
+                            // Punctuation was removed
+                            punctuationHtml += `<span class="token removed">${lowercaseResult[i]}</span>`;
+                        } else {
+                            // Regular character, find the end of the word
+                            let wordStart = j;
+                            while (j < punctuationResult.length && punctuationResult[j] !== ' ') {
+                                j++;
+                            }
+                            
+                            // Add the word
+                            punctuationHtml += `<span class="token">${punctuationResult.substring(wordStart, j)}</span>`;
+                            
+                            // Skip over the word in the original
+                            while (i < lowercaseResult.length && lowercaseResult[i] !== ' ') {
+                                i++;
+                            }
+                            
+                            // Skip spaces
+                            if (i < lowercaseResult.length && lowercaseResult[i] === ' ') {
+                                punctuationHtml += ' ';
+                                i++;
+                            }
+                            
+                            if (j < punctuationResult.length && punctuationResult[j] === ' ') {
+                                j++;
+                            }
+                            
+                            continue;
+                        }
+                        i++;
+                    }
+                    
+                    punctuationText.innerHTML = punctuationHtml || punctuationResult.split(' ').map(word => `<span class="token">${word}</span>`).join(' ');
+                    steps[2].classList.add('visible');
+                    
+                    // Wait and show next step
+                    setTimeout(() => {
+                        // Step 4: Tokenize text
+                        const tokens = punctuationResult.split(/\s+/).filter(token => token.length > 0);
+                        tokenizeText.innerHTML = tokens.map(token => `<span class="token">${token}</span>`).join(' ');
+                        steps[3].classList.add('visible');
+                        
+                        // Wait and show next step
+                        setTimeout(() => {
+                            // Step 5: Remove stopwords and lemmatize
+                            let processedTokens = [];
+                            let stopwordsHtml = '';
+                            
+                            for (const token of tokens) {
+                                if (stopWords.has(token)) {
+                                    // Token is a stopword, should be removed
+                                    stopwordsHtml += `<span class="token removed">${token}</span> `;
+                                } else {
+                                    // Lemmatize the token
+                                    const lemmatized = lemmatize(token);
+                                    if (lemmatized !== token) {
+                                        stopwordsHtml += `<span class="token">${lemmatized}</span> `;
+                                        processedTokens.push(lemmatized);
+                                    } else {
+                                        stopwordsHtml += `<span class="token">${token}</span> `;
+                                        processedTokens.push(token);
+                                    }
+                                }
+                            }
+                            
+                            stopwordsText.innerHTML = stopwordsHtml;
+                            steps[4].classList.add('visible');
+                            
+                            // Wait and show final result
+                            setTimeout(() => {
+                                // Step 6: Show final result
+                                finalText.innerHTML = processedTokens.map(token => `<span class="token important">${token}</span>`).join(' ');
+                                steps[5].classList.add('visible');
+                            }, 1000);
+                        }, 1000);
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }
+
+        // Event listeners
+        processBtn.addEventListener('click', processText);
+        resetBtn.addEventListener('click', resetVisualization);
+
+        // Initial animation on page load
+        window.addEventListener('load', () => {
+            setTimeout(processText, 500);
+        });
+    </script>
+</body>
+</html>

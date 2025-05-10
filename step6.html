@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 6: Response Selection - WorldOS Linear Algebra Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #00bfa5;
+            --bg-dark: #1e1e2f;
+            --bg-darker: #151525;
+            --text-light: #f1f1f1;
+            --window-bg: rgba(42, 42, 58, 0.95);
+            --accent-color: #ff5f57;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(30, 30, 40, 0.8);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo span {
+            margin-left: 10px;
+        }
+
+        .steps-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-btn {
+            padding: 8px 15px;
+            background: rgba(74, 108, 247, 0.2);
+            border: 1px solid rgba(74, 108, 247, 0.5);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .step-btn:hover {
+            background: rgba(74, 108, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .step-btn.active {
+            background: rgba(74, 108, 247, 0.6);
+            box-shadow: 0 4px 10px rgba(74, 108, 247, 0.3);
+        }
+
+        main {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .visualization {
+            flex: 2;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .explanation {
+            flex: 1;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .math-formula {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary-color);
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .interactive-area {
+            flex: 1;
+            position: relative;
+            background: rgba(25, 25, 35, 0.6);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.primary {
+            background: rgba(74, 108, 247, 0.4);
+        }
+
+        .control-btn.primary:hover {
+            background: rgba(74, 108, 247, 0.6);
+        }
+
+        input[type="text"] {
+            padding: 8px 15px;
+            background: rgba(25, 25, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .response-container {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+        }
+
+        .response-step {
+            background: rgba(30, 30, 40, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .response-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .response-step-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .intent-result {
+            background: rgba(74, 108, 247, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .intent-tag {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .intent-confidence {
+            background: rgba(0, 191, 165, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .responses-list {
+            margin: 15px 0;
+        }
+
+        .response-option {
+            background: rgba(30, 30, 40, 0.7);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .response-option:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .response-option.selected {
+            border-color: var(--secondary-color);
+            background: rgba(0, 191, 165, 0.2);
+        }
+
+        .final-response {
+            background: rgba(30, 30, 40, 0.7);
+            padding: 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 3px solid var(--secondary-color);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 250px;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 5px;
+            animation: fadeIn 0.5s;
+            position: relative;
+        }
+
+        .user-message {
+            background: rgba(74, 108, 247, 0.3);
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .assistant-message {
+            background: rgba(30, 30, 40, 0.8);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            background: rgba(25, 25, 35, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .select-container {
+            margin: 15px 0;
+        }
+
+        .select-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .select-box select {
+            width: 100%;
+            padding: 10px 15px;
+            background: rgba(30, 30, 40, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 4px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .select-box::after {
+            content: '▼';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .select-box select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .special-handlers {
+            margin: 15px 0;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .handler-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .handler-item:last-child {
+            border-bottom: none;
+        }
+
+        .handler-name {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .handler-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .memory-container {
+            margin: 15px 0;
+        }
+
+        .memory-item {
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            animation: fadeIn 0.5s;
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .memory-timestamp {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .memory-user {
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+
+        .memory-assistant {
+            color: var(--secondary-color);
+        }
+
+        .memory-similarity {
+            background: rgba(74, 108, 247, 0.3);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .memory-note {
+            margin-top: 10px;
+            font-size: 14px;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .confidence-threshold {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .threshold-slider {
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .threshold-track {
+            height: 6px;
+            background: linear-gradient(to right, #ff5f57, #ffbd4c, #4a6cf7, #00bfa5);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .threshold-marker {
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+
+        .threshold-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .threshold-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--secondary-color);
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .code-block {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        .code-comment {
+            color: #8bc34a;
+        }
+
+        .fallback-response {
+            background: rgba(255, 95, 87, 0.2);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .fallback-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ff5f57;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes highlight {
+            0%, 100% {
+                background: rgba(74, 108, 247, 0.3);
+            }
+            50% {
+                background: rgba(74, 108, 247, 0.7);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(30, 30, 40, 0.8);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .prev-step {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .prev-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 191, 165, 0.4);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            🧠 <span>WorldOS Linear Algebra Visualizer</span>
+        </div>
+        <div class="steps-nav">
+            <a href="step1.html" class="step-btn">1. Text Preprocessing</a>
+            <a href="step2.html" class="step-btn">2. Vector Representation</a>
+            <a href="step3.html" class="step-btn">3. TF-IDF Weighting</a>
+            <a href="step4.html" class="step-btn">4. Dimension Reduction</a>
+            <a href="step5.html" class="step-btn">5. Cosine Similarity</a>
+            <a href="step6.html" class="step-btn active">6. Response Selection</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="visualization">
+            <div class="controls">
+                <input type="text" id="user-input" placeholder="Type a message..." value="how does linear algebra help with text understanding">
+                <button id="process-btn" class="control-btn primary">Generate Response</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            <div class="interactive-area" id="interactive-area">
+                <h3>Response Generation Process</h3>
+                
+                <div class="response-container" id="response-container">
+                    <div class="response-step" id="intent-step">
+                        <div class="response-step-title">Step 1: Match Intent Using Cosine Similarity</div>
+                        <div class="intent-result">
+                            <div class="intent-tag">Intent: <span id="intent-tag">linear_algebra_explanation</span></div>
+                            <div class="intent-confidence">Confidence: <span id="intent-confidence">0.00</span></div>
+                        </div>
+                        <div class="confidence-threshold">
+                            <div>Confidence Threshold: <span id="threshold-value">0.30</span></div>
+                            <div class="threshold-slider">
+                                <div class="threshold-track">
+                                    <div class="threshold-marker" id="threshold-marker" style="left: 30%;"></div>
+                                </div>
+                                <div class="threshold-labels">
+                                    <span>0.0</span>
+                                    <span>0.25</span>
+                                    <span>0.5</span>
+                                    <span>0.75</span>
+                                    <span>1.0</span>
+                                </div>
+                            </div>
+                            <div class="code-block">
+                                <span class="code-comment">// Check if confidence is above threshold</span><br>
+                                if (confidence >= threshold) {<br>
+                                &nbsp;&nbsp;return responses_by_tag.get(tag);<br>
+                                } else {<br>
+                                &nbsp;&nbsp;return generate_fallback_response(user_input);<br>
+                                }
+                            </div>
+                        </div>
+                        <div class="fallback-response" id="fallback-response">
+                            <div class="fallback-title">Low Confidence: Using Fallback Response</div>
+                            <p>
+                                When confidence is below the threshold, WorldOS generates a more intelligent fallback response
+                                by extracting keywords from the query and providing a more helpful reply than a simple "I don't understand."
+                            </p>
+                            <div class="code-block">
+                                <span class="code-comment">// Extract potential keywords from the query</span><br>
+                                words = re.findall(r'\b\w+\b', user_input.lower())<br>
+                                keywords = [word for word in words if word not in common_words]<br><br>
+                                <span class="code-comment">// Generate response based on extracted keywords</span><br>
+                                return f"I notice you mentioned {keywords}. Could you provide more details?"
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="response-step" id="response-selection-step">
+                        <div class="response-step-title">Step 2: Select Response from Intent's Response Pool</div>
+                        <div id="special-handlers-section" style="display: none;">
+                            <p>Special handler detected: <span id="special-handler">linear_algebra</span></p>
+                            <div class="special-handlers">
+                                <div class="handler-item">
+                                    <div class="handler-name">time</div>
+                                    <div class="handler-description">Provides current time information</div>
+                                </div>
+                                <div class="handler-item">
+                                    <div class="handler-name">date</div>
+                                    <div class="handler-description">Provides current date information</div>
+                                </div>
+                                <div class="handler-item">
+                                    <div class="handler-name">math</div>
+                                    <div class="handler-description">Performs basic calculations</div>
+                                </div>
+                                <div class="handler-item">
+                                    <div class="handler-name">linear_algebra</div>
+                                    <div class="handler-description">Explains linear algebra concepts</div>
+                                </div>
+                                <div class="handler-item">
+                                    <div class="handler-name">vector_space</div>
+                                    <div class="handler-description">Explains vector space models</div>
+                                </div>
+                            </div>
+                            <div class="code-block">
+                                <span class="code-comment">// Check if we have a special handler for this tag</span><br>
+                                if tag in self.special_handlers:<br>
+                                &nbsp;&nbsp;return self.special_handlers[tag]()
+                            </div>
+                        </div>
+                        
+                        <div id="standard-responses-section">
+                            <p>Selecting from potential responses for <span id="response-intent-tag">linear_algebra_explanation</span> intent:</p>
+                            <div class="responses-list" id="responses-list">
+                                <!-- Response options will be displayed here -->
+                            </div>
+                            <div class="code-block">
+                                <span class="code-comment">// Select random response from the intent's pool</span><br>
+                                responses = self.responses_by_tag.get(tag, ["I'm not sure how to respond to that."])<br>
+                                return random.choice(responses)
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="response-step" id="memory-step">
+                        <div class="response-step-title">Step 3: Context Enhancement with Conversation Memory</div>
+                        <div class="code-block">
+                            <span class="code-comment">// Find related previous exchanges using cosine similarity</span><br>
+                            related_exchanges = self.memory.find_related_exchanges(user_input)<br><br>
+                            <span class="code-comment">// Use related exchange to enhance response if similarity is high</span><br>
+                            if related_exchanges and related_exchanges[0]["similarity"] > 0.5:<br>
+                            &nbsp;&nbsp;exchange = related_exchanges[0]["exchange"]<br>
+                            &nbsp;&nbsp;return f"As we discussed earlier about '{exchange['user']}', {response}"
+                        </div>
+                        <div class="memory-container" id="memory-container">
+                            <!-- Memory items will be displayed here -->
+                        </div>
+                        <div class="memory-note">
+                            The conversation memory uses the same vector space model and cosine similarity as the intent classification to find relevant past exchanges. This allows for context-aware responses.
+                        </div>
+                    </div>
+                    
+                    <div class="response-step" id="final-step">
+                        <div class="response-step-title">Step 4: Final Response</div>
+                        <div class="final-response" id="final-response">
+                            <!-- Final response will be displayed here -->
+                        </div>
+                        <div class="code-block">
+                            <span class="code-comment">// Add to conversation memory for future reference</span><br>
+                            self.memory.add_exchange(user_input, response)
+                        </div>
+                    </div>
+                    
+                    <div class="response-step" id="chat-step">
+                        <div class="response-step-title">Conversation Update</div>
+                        <div class="chat-container">
+                            <div class="chat-history" id="chat-history">
+                                <!-- Chat messages will be displayed here -->
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1;">
+                                <button id="send-btn" class="control-btn primary" style="margin-left: 10px;">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="step5.html" class="prev-step">← Previous: Cosine Similarity</a>
+            </div>
+        </section>
+
+        <section class="explanation">
+            <h2>Response Selection</h2>
+            <p>
+                After identifying the most likely intent through vector space operations and cosine similarity, 
+                WorldOS generates an appropriate response. This process is handled by the <code>ResponseGenerator</code> 
+                class in the WorldOS codebase.
+            </p>
+            
+            <h3>Intent to Response Mapping</h3>
+            <p>
+                The system maintains a mapping of intents to possible responses in <code>intents.json</code>. 
+                Each intent has multiple potential responses, allowing for natural variation in the assistant's replies:
+            </p>
+            
+            <div class="math-formula">
+                intent_tag → [response₁, response₂, ..., responseₙ]
+            </div>
+            
+            <p>
+                When an intent is identified through the vector similarity process, WorldOS selects one of these 
+                potential responses randomly:
+            </p>
+            
+            <div class="math-formula">
+                responses = self.responses_by_tag.get(tag, ["I'm not sure how to respond to that."])
+                <br>
+                return random.choice(responses)
+            </div>
+            
+            <h3>Special Handlers</h3>
+            <p>
+                For certain types of queries, WorldOS uses special handlers to generate dynamic responses 
+                based on real-time information or computations:
+            </p>
+            
+            <ul>
+                <li><strong>Time:</strong> Provides the current time</li>
+                <li><strong>Date:</strong> Provides the current date</li>
+                <li><strong>Math:</strong> Performs basic calculations</li>
+                <li><strong>System Info:</strong> Provides information about WorldOS</li>
+                <li><strong>Linear Algebra Concepts:</strong> Explains specific linear algebra topics</li>
+            </ul>
+            
+            <p>
+                These special handlers are registered and invoked through a dispatching mechanism:
+            </p>
+            
+            <div class="math-formula">
+                # Check if we have a special handler for this tag
+                <br>
+                if tag in self.special_handlers:
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;return self.special_handlers[tag]()
+            </div>
+            
+            <h3>Confidence Thresholds</h3>
+            <p>
+                WorldOS doesn't blindly trust the intent classification results. It applies a confidence 
+                threshold (typically 0.3) to determine whether to use the matched intent's responses or 
+                fall back to a more generic response:
+            </p>
+            
+            <div class="math-formula">
+                # If confidence is low, generate a fallback response
+                <br>
+                if tag == "fallback" or confidence < 0.3:
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;return self._generate_fallback_response(user_input)
+            </div>
+            
+            <p>
+                This threshold-based approach helps prevent the system from giving incorrect or irrelevant 
+                responses when the intent matching is uncertain.
+            </p>
+            
+            <h3>Fallback Mechanisms</h3>
+            <p>
+                When confidence is low, the system uses an intelligent fallback mechanism that examines 
+                the input for keywords and structure to provide a more helpful response than a simple 
+                "I don't understand":
+            </p>
+            
+            <div class="math-formula">
+                def _generate_fallback_response(self, user_input):
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;# Extract potential keywords from the query
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;words = re.findall(r'\b\w+\b', user_input.lower())
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;keywords = [word for word in words if word not in common_words and len(word) > 2]
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;# Generate response based on extracted keywords
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;if keywords:
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return f"I notice you mentioned {', '.join(keywords[:2])}. Could you provide more details?"
+            </div>
+            
+            <h3>Memory-Enhanced Responses</h3>
+            <p>
+                WorldOS maintains a conversation memory to provide context-aware responses. Each exchange 
+                is stored in the <code>ConversationMemory</code> class:
+            </p>
+            
+            <div class="math-formula">
+                self.memory.add_exchange(user_input, reply)
+            </div>
+            
+            <p>
+                This memory is used to enhance responses by finding relevant previous exchanges:
+            </p>
+            
+            <div class="math-formula">
+                related_exchanges = self.memory.find_related_exchanges(user_input)
+                <br>
+                # If we have related exchanges with high similarity, use them
+                <br>
+                if related_exchanges and related_exchanges[0]["similarity"] > 0.5:
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;exchange = related_exchanges[0]["exchange"]
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;return f"I think you're asking about something similar to your earlier question."
+            </div>
+            
+            <h3>Contextual Embeddings</h3>
+            <p>
+                The memory system uses the same vector space model as the intent classification to find 
+                related prior exchanges. It uses cosine similarity between the current query and 
+                previous exchanges to identify relevant context:
+            </p>
+            
+            <div class="math-formula">
+                # Calculate similarity with past user messages
+                <br>
+                user_vector = self.feature_extractor.transform(exchange["user"])
+               <br>
+                sim = cosine_similarity(user_vector.reshape(1, -1), input_vector.reshape(1, -1))[0][0]
+            </div>
+            
+            <h3>Semantic Enhancement</h3>
+            <p>
+                In addition to the basic intent matching, WorldOS includes a <code>SemanticMatcher</code> 
+                that uses more sophisticated techniques to improve matching accuracy. This component
+                helps identify semantic relationships that might be missed by simple cosine similarity:
+            </p>
+            
+            <div class="math-formula">
+                # Try advanced semantic matching techniques
+                <br>
+                semantic_prediction = self.semantic_matcher.find_semantic_match(user_input)
+                <br>
+                # Use the semantic prediction if available
+                <br>
+                prediction = semantic_prediction or self.classifier.predict(user_input)
+            </div>
+            
+            <p>
+                This multi-stage approach helps the system understand user intents even when the exact words
+                are different, leveraging the full power of the vector space model and dimension reduction.
+            </p>
+            
+            <h3>Linear Algebra Connection</h3>
+            <p>
+                The response generation process demonstrates the practical application of the vector space model:
+            </p>
+            <ul>
+                <li>Response selection is based on the vector similarity calculations from previous steps</li>
+                <li>Conversation memory leverages the same vector space to find related exchanges</li>
+                <li>The semantic understanding emerges from the linear algebra operations on vectors</li>
+                <li>The entire pipeline shows how linear algebra transforms natural language into mathematical structures that enable meaningful interactions</li>
+            </ul>
+            
+            <p>
+                This completes our journey through the WorldOS system, showing how linear algebra powers 
+                every step from initial text processing to final response generation. The system demonstrates 
+                how mathematical principles can create intelligent, contextually aware interactions.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        WorldOS Linear Algebra Visualizer - Created for Linear Algebra Project Presentation
+    </footer>
+
+    <script>
+        // Define sample responses for each intent
+        const intentResponses = {
+            linear_algebra_explanation: [
+                "Linear algebra is fundamental to text understanding because it allows us to represent words and documents as vectors in a high-dimensional space. This vector space model enables mathematical operations like calculating similarity between texts using cosine of the angle between their vectors.",
+                "In the context of text processing, linear algebra provides the mathematical framework for representing text as vectors. Each dimension corresponds to a term, and operations like dot products and vector norms allow us to compare documents regardless of their length.",
+                "Understanding text with linear algebra involves converting words to vectors and performing operations on these vectors. The vector space model lets us quantify relationships between different texts using metrics like cosine similarity, all powered by matrix operations."
+            ],
+            vector_space_model: [
+                "The vector space model represents text documents as vectors in a multi-dimensional space where each dimension corresponds to a unique term. The model allows semantic comparisons using vector operations like cosine similarity.",
+                "In a vector space model, documents become points in a high-dimensional space. Each axis represents a term in the vocabulary, and the coordinates indicate the importance of those terms in the document.",
+                "Vector space models transform text into mathematical structures where semantic relationships are preserved as geometric relationships. This powerful representation enables efficient information retrieval and comparison."
+            ],
+            cosine_similarity: [
+                "Cosine similarity measures the angle between two vectors and is ideal for text comparison because it's invariant to document length, focusing only on the direction of the vectors in the space.",
+                "The key advantage of cosine similarity for text comparison is that it focuses on the orientation of vectors rather than their magnitude, making it perfect for comparing documents of different lengths.",
+                "In text analysis, cosine similarity provides a bounded similarity measure (0-1) based on the angle between vectors. This gives us an intuitive way to determine how semantically close two documents are."
+            ],
+            dimension_reduction: [
+                "SVD reduces the dimensionality of the vector space while preserving its most important characteristics. By keeping only the top singular values, we retain the most significant patterns in the data.",
+                "Dimension reduction with SVD helps uncover latent semantic relationships while significantly reducing computational complexity. It's like finding the essence of the text data in a more compact form.",
+                "By applying SVD to the term-document matrix, we reduce noise and uncover hidden relationships between terms. This latent semantic analysis improves similarity calculations by focusing on conceptual rather than literal matches."
+            ],
+            text_processing: [
+                "Text processing in WorldOS involves a pipeline of operations: tokenization, stopword removal, lemmatization, TF-IDF weighting, and dimension reduction - all powered by linear algebra.",
+                "The text processing pipeline transforms raw text into weighted vectors that capture semantic meaning. Each step uses matrix operations to refine the representation.",
+                "Processing text mathematically involves cleaning, normalization, and transformation steps that convert unstructured text into structured vectors suitable for computation."
+            ],
+            fallback: [
+                "I'm not entirely sure what you're asking about. Could you provide more details or rephrase your question?",
+                "I'm still learning about this topic. Could you ask in a different way or provide more context?",
+                "I'm not confident I understand your question correctly. Could you elaborate further?"
+            ]
+        };
+        
+        // Special handlers for dynamic responses
+        const specialHandlers = {
+            time: "The current time is 10:25 AM. This information is also displayed in the WorldOS taskbar.",
+            date: "Today is Saturday, May 10, 2025.",
+            math: "I can help with calculations using matrix operations. Could you provide a specific math problem to solve?",
+            system_info: "WorldOS is your personal operating system in the browser. I'm powered by advanced linear algebra algorithms, including vector space models and cosine similarity. My brain works by converting text to vectors and finding patterns using matrix operations like TF-IDF and SVD.",
+            linear_algebra: "I use several key linear algebra concepts in my language understanding process:\n\n1) Vector Space Models: I represent text as points in a multi-dimensional space\n2) TF-IDF Matrices: I weight important words higher than common ones\n3) Cosine Similarity: I measure the angle between vectors to determine text similarity\n4) SVD: I reduce dimensions while preserving semantic relationships",
+            vector_space: "In a Vector Space Model, I represent text as vectors in a multi-dimensional space. Each unique word in my vocabulary is a dimension, and the position in this space captures semantic meaning. Similar texts are positioned close together in this space."
+        };
+        
+        // Sample conversation memory
+        const conversationMemory = [
+            {
+                user: "what is a vector space model",
+                assistant: "In a vector space model, documents become points in a high-dimensional space. Each axis represents a term in the vocabulary, and the coordinates indicate the importance of those terms in the document.",
+                timestamp: "2025-05-10 10:15:22",
+                similarity: 0.72
+            },
+            {
+                user: "how does cosine similarity work",
+                assistant: "Cosine similarity measures the angle between two vectors and is ideal for text comparison because it's invariant to document length, focusing only on the direction of the vectors in the space.",
+                timestamp: "2025-05-10 10:17:45",
+                similarity: 0.58
+            },
+            {
+                user: "explain tf-idf to me",
+                assistant: "TF-IDF (Term Frequency-Inverse Document Frequency) is how I determine the importance of words. It combines how often a term appears in a document with how rare it is across all documents, giving higher weight to terms that are distinctive to particular documents.",
+                timestamp: "2025-05-10 10:21:33",
+                similarity: 0.35
+            }
+        ];
+        
+        // Common keywords for extraction
+        const commonWords = ['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 
+                            'have', 'has', 'had', 'do', 'does', 'did', 'can', 'could', 'will', 
+                            'would', 'should', 'may', 'might', 'must', 'shall', 'and', 'but', 
+                            'or', 'if', 'then', 'else', 'when', 'where', 'why', 'how', 'what', 
+                            'who', 'whom', 'which', 'that', 'this', 'these', 'those', 'not', 'for', 
+                            'to', 'with', 'by', 'about', 'against', 'between', 'into', 'through'];
+        
+        // Get DOM elements
+        const userInput = document.getElementById('user-input');
+        const processBtn = document.getElementById('process-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatHistory = document.getElementById('chat-history');
+        
+        const intentStep = document.getElementById('intent-step');
+        const responseSelectionStep = document.getElementById('response-selection-step');
+        const memoryStep = document.getElementById('memory-step');
+        const finalStep = document.getElementById('final-step');
+        const chatStep = document.getElementById('chat-step');
+        
+        const intentTag = document.getElementById('intent-tag');
+        const intentConfidence = document.getElementById('intent-confidence');
+        const responseIntentTag = document.getElementById('response-intent-tag');
+        const responsesList = document.getElementById('responses-list');
+        const memoryContainer = document.getElementById('memory-container');
+        const finalResponse = document.getElementById('final-response');
+        const fallbackResponse = document.getElementById('fallback-response');
+        
+        const specialHandlersSection = document.getElementById('special-handlers-section');
+        const standardResponsesSection = document.getElementById('standard-responses-section');
+        const specialHandler = document.getElementById('special-handler');
+        
+        const thresholdMarker = document.getElementById('threshold-marker');
+        const thresholdValue = document.getElementById('threshold-value');
+        
+        // Set initial threshold value
+        let confidenceThreshold = 0.3;
+        
+        // Add event listener for threshold slider
+        thresholdMarker.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            
+            const track = thresholdMarker.parentElement;
+            const trackRect = track.getBoundingClientRect();
+            const trackWidth = trackRect.width;
+            
+            function moveMarker(e) {
+                // Calculate position as percentage of track width
+                let x = e.clientX - trackRect.left;
+                let percentage = Math.max(0, Math.min(100, (x / trackWidth) * 100));
+                
+                // Update marker position
+                thresholdMarker.style.left = `${percentage}%`;
+                
+                // Update threshold value (0 to 1)
+                confidenceThreshold = Math.round(percentage) / 100;
+                thresholdValue.textContent = confidenceThreshold.toFixed(2);
+                
+                // Check if we need to show fallback response
+                const currentConfidence = parseFloat(intentConfidence.textContent);
+                if (currentConfidence < confidenceThreshold) {
+                    fallbackResponse.style.display = 'block';
+                } else {
+                    fallbackResponse.style.display = 'none';
+                }
+            }
+            
+            function stopMoving() {
+                document.removeEventListener('mousemove', moveMarker);
+                document.removeEventListener('mouseup', stopMoving);
+            }
+            
+            document.addEventListener('mousemove', moveMarker);
+            document.addEventListener('mouseup', stopMoving);
+        });
+        
+        // Function to reset visualization
+        function resetVisualization() {
+            intentStep.classList.remove('visible');
+            responseSelectionStep.classList.remove('visible');
+            memoryStep.classList.remove('visible');
+            finalStep.classList.remove('visible');
+            chatStep.classList.remove('visible');
+            
+            intentTag.textContent = 'linear_algebra_explanation';
+            intentConfidence.textContent = '0.00';
+            responseIntentTag.textContent = 'linear_algebra_explanation';
+            responsesList.innerHTML = '';
+            memoryContainer.innerHTML = '';
+            finalResponse.innerHTML = '';
+            
+            specialHandlersSection.style.display = 'none';
+            standardResponsesSection.style.display = 'block';
+            fallbackResponse.style.display = 'none';
+            
+            chatHistory.innerHTML = '';
+        }
+        
+        // Function to extract keywords from text
+        function extractKeywords(text) {
+            const words = text.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+            return words.filter(word => !commonWords.includes(word));
+        }
+        
+        // Function to determine intent based on input
+        function determineIntent(input) {
+            // Map input keywords to likely intents
+            const keywords = {
+                'linear algebra': 'linear_algebra_explanation',
+                'vector space': 'vector_space_model',
+                'cosine similarity': 'cosine_similarity',
+                'svd': 'dimension_reduction',
+                'dimension reduction': 'dimension_reduction',
+                'text process': 'text_processing',
+                'matrix': 'linear_algebra_explanation',
+                'tf-idf': 'text_processing',
+                'vector': 'vector_space_model',
+                'similarity': 'cosine_similarity',
+                'time': 'time',
+                'date': 'date',
+                'calculate': 'math',
+                'system': 'system_info'
+            };
+            
+            // Check for special handlers first
+            for (const [key, handler] of Object.entries(specialHandlers)) {
+                if (input.toLowerCase().includes(key)) {
+                    return {
+                        tag: key,
+                        confidence: 0.95,
+                        isSpecial: true
+                    };
+                }
+            }
+            
+            // Check for keyword matches
+            let bestMatch = null;
+            let highestConfidence = 0;
+            
+            for (const [keyword, intent] of Object.entries(keywords)) {
+                if (input.toLowerCase().includes(keyword)) {
+                    // Calculate a simple confidence based on keyword prominence
+                    const keywordLength = keyword.length;
+                    const inputLength = input.length;
+                    const confidence = Math.min(0.95, 0.4 + (keywordLength / inputLength) * 0.6);
+                    
+                    if (confidence > highestConfidence) {
+                        highestConfidence = confidence;
+                        bestMatch = intent;
+                    }
+                }
+            }
+            
+            // Use fallback if no match found
+            if (!bestMatch || highestConfidence < 0.3) {
+                return {
+                    tag: 'fallback',
+                    confidence: Math.max(0.1, highestConfidence),
+                    isSpecial: false
+                };
+            }
+            
+            return {
+                tag: bestMatch,
+                confidence: highestConfidence,
+                isSpecial: false
+            };
+        }
+        
+        // Function to display intent result
+        function displayIntentResult(intent) {
+            intentTag.textContent = intent.tag;
+            intentConfidence.textContent = intent.confidence.toFixed(2);
+            responseIntentTag.textContent = intent.tag;
+            
+            // Show fallback response if confidence is below threshold
+            if (intent.confidence < confidenceThreshold) {
+                fallbackResponse.style.display = 'block';
+            } else {
+                fallbackResponse.style.display = 'none';
+            }
+            
+            // Show intent step with animation
+            intentStep.classList.add('visible');
+        }
+        
+        // Function to display response options
+        function displayResponseOptions(intent) {
+            // Check if it's a special handler
+            if (intent.isSpecial) {
+                specialHandlersSection.style.display = 'block';
+                standardResponsesSection.style.display = 'none';
+                specialHandler.textContent = intent.tag;
+            } else {
+                specialHandlersSection.style.display = 'none';
+                standardResponsesSection.style.display = 'block';
+                
+                // Get responses for this intent
+                const responses = intentResponses[intent.tag] || intentResponses.fallback;
+                
+                // Display responses
+                responsesList.innerHTML = '';
+                
+                for (let i = 0; i < responses.length; i++) {
+                    const responseDiv = document.createElement('div');
+                    responseDiv.className = 'response-option';
+                    responseDiv.textContent = responses[i];
+                    responseDiv.dataset.index = i;
+                    
+                    // Add click handler to select this response
+                    responseDiv.addEventListener('click', function() {
+                        // Remove selected class from all options
+                        document.querySelectorAll('.response-option').forEach(option => {
+                            option.classList.remove('selected');
+                        });
+                        
+                        // Add selected class to this option
+                        this.classList.add('selected');
+                    });
+                    
+                    responsesList.appendChild(responseDiv);
+                }
+                
+                // Select first response by default
+                if (responses.length > 0) {
+                    responsesList.children[0].classList.add('selected');
+                }
+            }
+            
+            // Show response selection step with animation
+            responseSelectionStep.classList.add('visible');
+        }
+        
+        // Function to display memory
+        function displayMemory() {
+            memoryContainer.innerHTML = '';
+            
+            // Sort by similarity (descending)
+            const sortedMemory = [...conversationMemory].sort((a, b) => b.similarity - a.similarity);
+            
+            for (let i = 0; i < sortedMemory.length; i++) {
+                const memory = sortedMemory[i];
+                
+                const memoryDiv = document.createElement('div');
+                memoryDiv.className = 'memory-item';
+                
+                memoryDiv.innerHTML = `
+                    <div class="memory-header">
+                        <div class="memory-similarity">Similarity: ${memory.similarity.toFixed(2)}</div>
+                        <div class="memory-timestamp">${memory.timestamp}</div>
+                    </div>
+                    <div class="memory-user">"${memory.user}"</div>
+                    <div class="memory-assistant">${memory.assistant}</div>
+                `;
+                
+                memoryContainer.appendChild(memoryDiv);
+            }
+            
+            // Show memory step with animation
+            memoryStep.classList.add('visible');
+        }
+        
+        // Function to display final response
+        function displayFinalResponse(intent) {
+            let response;
+            
+            // Check if confidence is below threshold
+            if (intent.confidence < confidenceThreshold) {
+                // Generate a fallback response based on keywords
+                const keywords = extractKeywords(userInput.value);
+                if (keywords.length > 0) {
+                    response = `I notice you mentioned ${keywords.slice(0, 2).join(' and ')}. Could you provide more details about what you'd like to know about these topics?`;
+                } else {
+                    response = intentResponses.fallback[0];
+                }
+            } else {
+                // Get response from special handler or selected option
+                if (intent.isSpecial) {
+                    response = specialHandlers[intent.tag];
+                } else {
+                    const selectedOption = document.querySelector('.response-option.selected');
+                    if (selectedOption) {
+                        response = selectedOption.textContent;
+                    } else {
+                        // Fallback to random response
+                        const responses = intentResponses[intent.tag] || intentResponses.fallback;
+                        response = responses[Math.floor(Math.random() * responses.length)];
+                    }
+                }
+            }
+            
+            // Enhance with memory if similarity is high
+            const relevantMemory = conversationMemory.find(m => m.similarity > 0.65);
+            if (relevantMemory) {
+                response = `Following up on our previous conversation about "${relevantMemory.user}", ${response}`;
+            }
+            
+            finalResponse.textContent = response;
+            
+            // Show final step with animation
+            finalStep.classList.add('visible');
+            
+            // Return the response for adding to chat
+            return response;
+        }
+        
+        // Function to add message to chat
+        function addChatMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isUser ? 'user-message' : 'assistant-message'}`;
+            messageDiv.textContent = text;
+            
+            chatHistory.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+        
+        // Function to display chat
+        function displayChat(userText, assistantText) {
+            // Add messages to chat
+            addChatMessage(userText, true);
+            
+            // Delay assistant response slightly
+            setTimeout(() => {
+                addChatMessage(assistantText);
+            }, 1000);
+            
+            // Show chat step with animation
+            chatStep.classList.add('visible');
+        }
+        
+        // Function to process input and generate response
+        function processInput() {
+            // Reset visualization
+            resetVisualization();
+            
+            // Get input text
+            const text = userInput.value || "how does linear algebra help with text understanding";
+            
+            // Determine intent
+            const intent = determineIntent(text);
+            
+            // Assign random similarity scores to memory for this query
+            for (let memory of conversationMemory) {
+                memory.similarity = Math.random() * 0.8;
+            }
+            
+            // Check for related queries in memory
+            if (text.toLowerCase().includes('vector') && text.toLowerCase().includes('space')) {
+                conversationMemory[0].similarity = 0.72; // Higher similarity for vector space query
+            } else if (text.toLowerCase().includes('cosine') || text.toLowerCase().includes('similarity')) {
+                conversationMemory[1].similarity = 0.68; // Higher similarity for cosine similarity query
+            } else if (text.toLowerCase().includes('tf') && text.toLowerCase().includes('idf')) {
+                conversationMemory[2].similarity = 0.75; // Higher similarity for tf-idf query
+            }
+            
+            // Display intent result
+            displayIntentResult(intent);
+            
+            // Delay to show next step
+            setTimeout(() => {
+                // Display response options
+                displayResponseOptions(intent);
+                
+                // Delay to show next step
+                setTimeout(() => {
+                    // Display memory
+                    displayMemory();
+                    
+                    // Delay to show next step
+                    setTimeout(() => {
+                        // Display final response
+                        const response = displayFinalResponse(intent);
+                        
+                        // Delay to show chat
+                        setTimeout(() => {
+                            // Display chat
+                            displayChat(text, response);
+                            
+                            // Update chat input with the current query
+                            chatInput.value = text;
+                            
+                            // Add to memory for future reference
+                            conversationMemory.unshift({
+                                user: text,
+                                assistant: response,
+                                timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                                similarity: 1.0 // Most similar to itself
+                            });
+                            
+                            // Keep memory at max 5 items
+                            if (conversationMemory.length > 5) {
+                                conversationMemory.pop();
+                            }
+                        }, 1000);
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }
+        
+        // Function to handle chat input
+        function handleChatInput() {
+            const text = chatInput.value.trim();
+            
+            if (text) {
+                // Reset input
+                chatInput.value = '';
+                
+                // Add user message to chat
+                addChatMessage(text, true);
+                
+                // Simulate thinking with delay
+                setTimeout(() => {
+                    // Determine intent
+                    const intent = determineIntent(text);
+                    
+                    // Get response
+                    let response;
+                    
+                    if (intent.confidence < confidenceThreshold) {
+                        // Generate a fallback response based on keywords
+                        const keywords = extractKeywords(text);
+                        if (keywords.length > 0) {
+                            response = `I notice you mentioned ${keywords.slice(0, 2).join(' and ')}. Could you provide more details about what you'd like to know about these topics?`;
+                        } else {
+                            response = intentResponses.fallback[0];
+                        }
+                    } else if (intent.isSpecial) {
+                        response = specialHandlers[intent.tag];
+                    } else {
+                        const responses = intentResponses[intent.tag] || intentResponses.fallback;
+                        response = responses[Math.floor(Math.random() * responses.length)];
+                    }
+                    
+                    // Check for related queries in memory
+                    const relevantMemory = conversationMemory.find(m => 
+                        text.toLowerCase().includes(m.user.toLowerCase().split(' ')[0]) && 
+                        text.toLowerCase().includes(m.user.toLowerCase().split(' ')[1]) &&
+                        m.similarity > 0.5
+                    );
+                    
+                    if (relevantMemory) {
+                        response = `Following up on our previous conversation about "${relevantMemory.user}", ${response}`;
+                    }
+                    
+                    // Add assistant message to chat
+                    addChatMessage(response);
+                    
+                    // Add to memory
+                    conversationMemory.unshift({
+                        user: text,
+                        assistant: response,
+                        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        similarity: 1.0
+                    });
+                    
+                    // Keep memory at max 5 items
+                    if (conversationMemory.length > 5) {
+                        conversationMemory.pop();
+                    }
+                }, 1000);
+            }
+        }
+        
+        // Event listeners
+        processBtn.addEventListener('click', processInput);
+        resetBtn.addEventListener('click', resetVisualization);
+        sendBtn.addEventListener('click', handleChatInput);
+        
+        // Allow pressing Enter in chat input
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleChatInput();
+            }
+        });
+        
+        // Initial processing on page load
+        window.addEventListener('load', () => {
+            setTimeout(processInput, 500);
+        });
+    </script>
+</body>
+</html>

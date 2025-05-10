@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 4: Dimension Reduction (SVD) - WorldOS Linear Algebra Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #00bfa5;
+            --bg-dark: #1e1e2f;
+            --bg-darker: #151525;
+            --text-light: #f1f1f1;
+            --window-bg: rgba(42, 42, 58, 0.95);
+            --accent-color: #ff5f57;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(30, 30, 40, 0.8);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo span {
+            margin-left: 10px;
+        }
+
+        .steps-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-btn {
+            padding: 8px 15px;
+            background: rgba(74, 108, 247, 0.2);
+            border: 1px solid rgba(74, 108, 247, 0.5);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .step-btn:hover {
+            background: rgba(74, 108, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .step-btn.active {
+            background: rgba(74, 108, 247, 0.6);
+            box-shadow: 0 4px 10px rgba(74, 108, 247, 0.3);
+        }
+
+        main {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .visualization {
+            flex: 2;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .explanation {
+            flex: 1;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .math-formula {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary-color);
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .interactive-area {
+            flex: 1;
+            position: relative;
+            background: rgba(25, 25, 35, 0.6);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.primary {
+            background: rgba(74, 108, 247, 0.4);
+        }
+
+        .control-btn.primary:hover {
+            background: rgba(74, 108, 247, 0.6);
+        }
+
+        input[type="text"] {
+            padding: 8px 15px;
+            background: rgba(25, 25, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .svd-container {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .svd-step {
+            background: rgba(30, 30, 40, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .svd-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .svd-step-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .svd-formula {
+            font-family: 'Courier New', monospace;
+            background: rgba(25, 25, 35, 0.7);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .svd-matrices {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .svd-matrix {
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .matrix-symbol {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .matrix-symbol.u {
+            color: var(--primary-color);
+        }
+
+        .matrix-symbol.s {
+            color: var(--secondary-color);
+        }
+
+        .matrix-symbol.vt {
+            color: var(--accent-color);
+        }
+
+        .matrix-operator {
+            font-size: 24px;
+            margin: 0 10px;
+            align-self: center;
+        }
+
+        .matrix-dims {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+        }
+
+        .matrix-content {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .matrix-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .matrix-cell {
+            width: 30px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .matrix-cell.highlight {
+            background: rgba(74, 108, 247, 0.3);
+        }
+
+        .semantic-topics {
+            margin: 20px 0;
+        }
+
+        .topic {
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            animation: fadeIn 0.5s;
+        }
+
+        .topic-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .topic-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .topic-word {
+            padding: 4px 8px;
+            background: rgba(74, 108, 247, 0.2);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .reduced-vector {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        .reduced-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .reduced-label {
+            width: 100px;
+            text-align: right;
+            padding-right: 15px;
+            font-size: 14px;
+        }
+
+        .reduced-value {
+            display: flex;
+            flex: 1;
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 4px;
+            height: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reduced-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transform-origin: left;
+            transform: scaleX(0);
+            transition: transform 1s ease-out;
+        }
+
+        .reduced-text {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .dimension-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            background: rgba(30, 30, 40, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            animation: fadeIn 0.5s;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(30, 30, 40, 0.8);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .next-step, .prev-step {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .next-step:hover, .prev-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 191, 165, 0.4);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            🧠 <span>WorldOS Linear Algebra Visualizer</span>
+        </div>
+        <div class="steps-nav">
+            <a href="step1.html" class="step-btn">1. Text Preprocessing</a>
+            <a href="step2.html" class="step-btn">2. Vector Representation</a>
+            <a href="step3.html" class="step-btn">3. TF-IDF Weighting</a>
+            <a href="step4.html" class="step-btn active">4. Dimension Reduction</a>
+            <a href="step5.html" class="step-btn">5. Cosine Similarity</a>
+            <a href="step6.html" class="step-btn">6. Response Selection</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="visualization">
+            <div class="controls">
+                <div style="flex: 1;">
+                    <p>Number of dimensions to keep: <span id="dim-value">50</span></p>
+                    <input type="range" id="dimensions-slider" min="2" max="100" value="50">
+                </div>
+                <button id="process-btn" class="control-btn primary">Apply SVD</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            <div class="interactive-area" id="interactive-area">
+                <h3>Singular Value Decomposition (SVD)</h3>
+                
+                <div class="svd-container" id="svd-container">
+                    <div class="svd-step" id="original-matrix-step">
+                        <div class="svd-step-title">Original TF-IDF Matrix (Sparse & High-Dimensional)</div>
+                        <div class="svd-formula">
+                            A = Term-Document matrix of size m × n
+                            <br>
+                            (where m = number of documents, n = vocabulary size)
+                        </div>
+                        <div id="original-matrix-viz">
+                            <div class="matrix-dims">Sparse Matrix (6 × 962)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="svd-step" id="svd-decomposition-step">
+                        <div class="svd-step-title">SVD Decomposition: A = UΣVᵀ</div>
+                        <div class="svd-formula">
+                            A = UΣVᵀ
+                            <br>
+                            U: Document-topic matrix (m × r)
+                            <br>
+                            Σ: Diagonal matrix of singular values (r × r)
+                            <br>
+                            Vᵀ: Term-topic matrix transposed (r × n)
+                        </div>
+                        <div class="svd-matrices" id="svd-matrices">
+                            <div class="svd-matrix">
+                                <div class="matrix-symbol">A</div>
+                                <div class="matrix-dims">(6 × 962)</div>
+                                <div class="matrix-content"></div>
+                            </div>
+                            <div class="matrix-operator">=</div>
+                            <div class="svd-matrix">
+                                <div class="matrix-symbol u">U</div>
+                                <div class="matrix-dims">(6 × 50)</div>
+                                <div class="matrix-content"></div>
+                            </div>
+                            <div class="matrix-operator">×</div>
+                            <div class="svd-matrix">
+                                <div class="matrix-symbol s">Σ</div>
+                                <div class="matrix-dims">(50 × 50)</div>
+                                <div class="matrix-content"></div>
+                            </div>
+                            <div class="matrix-operator">×</div>
+                            <div class="svd-matrix">
+                                <div class="matrix-symbol vt">Vᵀ</div>
+                                <div class="matrix-dims">(50 × 962)</div>
+                                <div class="matrix-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="svd-step" id="dimension-reduction-step">
+                        <div class="svd-step-title">Dimension Reduction: Keep Top-<span id="k-value">50</span> Dimensions</div>
+                        <div class="svd-formula">
+                            Aₖ = UₖΣₖVₖᵀ
+                            <br>
+                            (where k = <span id="k-formula-value">50</span> dimensions kept)
+                        </div>
+                        <div class="dimension-stats">
+                            <div class="stat">
+                                <div class="stat-value">962</div>
+                                <div class="stat-label">Original Dimensions</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="kept-dimensions">50</div>
+                                <div class="stat-label">Dimensions Kept</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="dim-reduction">94.8%</div>
+                                <div class="stat-label">Dimension Reduction</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="variance-preserved">27.2%</div>
+                                <div class="stat-label">Variance Preserved</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="svd-step" id="latent-semantics-step">
+                        <div class="svd-step-title">Latent Semantic Analysis (LSA)</div>
+                        <div id="semantic-topics" class="semantic-topics">
+                            <div class="topic">
+                                <div class="topic-title">Topic 1: Vector Spaces & Embeddings</div>
+                                <div class="topic-words">
+                                    <div class="topic-word">vector</div>
+                                    <div class="topic-word">space</div>
+                                    <div class="topic-word">embedding</div>
+                                    <div class="topic-word">dimension</div>
+                                    <div class="topic-word">representation</div>
+                                </div>
+                            </div>
+                            <div class="topic">
+                                <div class="topic-title">Topic 2: Matrix Operations</div>
+                                <div class="topic-words">
+                                    <div class="topic-word">matrix</div>
+                                    <div class="topic-word">linear</div>
+                                    <div class="topic-word">algebra</div>
+                                    <div class="topic-word">operation</div>
+                                    <div class="topic-word">transformation</div>
+                                </div>
+                            </div>
+                            <div class="topic">
+                                <div class="topic-title">Topic 3: Similarity & Metrics</div>
+                                <div class="topic-words">
+                                    <div class="topic-word">similarity</div>
+                                    <div class="topic-word">cosine</div>
+                                    <div class="topic-word">distance</div>
+                                    <div class="topic-word">measure</div>
+                                    <div class="topic-word">compare</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="svd-step" id="reduced-vector-step">
+                        <div class="svd-step-title">Your Query in Reduced Dimensional Space</div>
+                        <div id="reduced-vector" class="reduced-vector">
+                            <!-- Reduced vectors will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="step3.html" class="prev-step">← Previous: TF-IDF Weighting</a>
+                <a href="step5.html" class="next-step">Next: Cosine Similarity →</a>
+            </div>
+        </section>
+
+        <section class="explanation">
+            <h2>Dimension Reduction (SVD)</h2>
+            <p>
+                After creating TF-IDF weighted vectors, WorldOS faces a problem: the vector space is 
+                extremely high-dimensional (equal to the vocabulary size, which can be thousands of dimensions). 
+                This leads to computational inefficiency and can suffer from the "curse of dimensionality."
+            </p>
+            
+            <p>
+                To address this, WorldOS uses the <code>DimensionReducer</code> class with Singular Value 
+                Decomposition (SVD) to reduce the dimensionality while preserving the most important patterns 
+                in the data.
+            </p>
+            
+            <h3>Singular Value Decomposition (SVD)</h3>
+            <p>
+                SVD is a powerful matrix factorization technique from linear algebra that decomposes 
+                a matrix into three simpler matrices:
+            </p>
+            
+            <div class="math-formula">
+                A = UΣV<sup>T</sup>
+            </div>
+            
+            <p>
+                Where:
+            </p>
+            <ul>
+                <li>A is the original term-document matrix (m × n)</li>
+                <li>U contains the left singular vectors (m × r, document-topic matrix)</li>
+                <li>Σ (Sigma) is a diagonal matrix of singular values (r × r, importance weights)</li>
+                <li>V<sup>T</sup> contains the right singular vectors transposed (r × n, term-topic matrix)</li>
+                <li>r is the rank of matrix A</li>
+            </ul>
+            
+            <h3>Truncated SVD for Dimension Reduction</h3>
+            <p>
+                In WorldOS, the <code>TruncatedSVD</code> implementation is used, which only keeps the 
+                top-k singular values and corresponding vectors:
+            </p>
+            
+            <div class="math-formula">
+                A<sub>k</sub> = U<sub>k</sub>Σ<sub>k</sub>V<sub>k</sub><sup>T</sup>
+            </div>
+            
+            <p>
+                WorldOS typically sets k=50, meaning it reduces the thousands of dimensions to just 50 
+                while preserving most of the important information. This is specified in the code:
+            </p>
+            
+            <div class="math-formula">
+                self.reducer = TruncatedSVD(n_components=n_components, random_state=42)
+            </div>
+            
+            <h3>Latent Semantic Analysis (LSA)</h3>
+            <p>
+                This application of SVD to text data is known as Latent Semantic Analysis (LSA) because it 
+                uncovers hidden (latent) semantic relationships between terms. The reduced dimensions can be 
+                interpreted as "topics" or "concepts" that organize the semantic space.
+            </p>
+            
+            <p>
+                For example, terms like "vector", "space", and "dimension" might be associated with one latent 
+                concept, while "matrix", "eigenvalue", and "decomposition" might be associated with another.
+            </p>
+            
+            <h3>Benefits of Dimension Reduction in WorldOS</h3>
+            <p>
+                The reduced-dimensional representation provides several advantages:
+            </p>
+            <ul>
+                <li><strong>Computational Efficiency:</strong> Operations in lower dimensions are much faster</li>
+                <li><strong>Noise Reduction:</strong> Less important patterns (often noise) are removed</li>
+                <li><strong>Semantic Enhancement:</strong> Words with similar meanings become closer in the reduced space</li>
+                <li><strong>Handling Synonymy:</strong> Different words with similar meanings are brought closer together</li>
+                <li><strong>Handling Polysemy:</strong> Same words with different meanings can be disambiguated by context</li>
+            </ul>
+            
+            <h3>Linear Algebra Connection</h3>
+            <p>
+                SVD is a cornerstone of linear algebra and demonstrates how matrix factorization can 
+                reveal the underlying structure of data. In the context of WorldOS:
+            </p>
+            <ul>
+                <li>The singular values (in Σ) represent the importance of each dimension</li>
+                <li>The U matrix relates documents to latent topics</li>
+                <li>The V<sup>T</sup> matrix relates terms to latent topics</li>
+                <li>The reduced-dimensional vectors preserve similarity relationships between documents</li>
+            </ul>
+            
+            <p>
+                After dimension reduction, WorldOS can measure similarity and match intents more efficiently 
+                in the reduced space, as implemented in the <code>predict</code> method of the <code>IntentClassifier</code> class:
+            </p>
+            
+            <div class="math-formula">
+                vector_reduced = self.dimension_reducer.transform(vector.reshape(1, -1))
+                <br>
+                similarities = cosine_similarity(vector_reduced, self.X_reduced).flatten()
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        WorldOS Linear Algebra Visualizer - Created for Linear Algebra Project Presentation
+    </footer>
+
+    <script>
+        // Get DOM elements
+        const dimensionsSlider = document.getElementById('dimensions-slider');
+        const dimValue = document.getElementById('dim-value');
+        const kValue = document.getElementById('k-value');
+        const kFormulaValue = document.getElementById('k-formula-value');
+        const keptDimensions = document.getElementById('kept-dimensions');
+        const dimReduction = document.getElementById('dim-reduction');
+        const variancePreserved = document.getElementById('variance-preserved');
+        const processBtn = document.getElementById('process-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const svdContainer = document.getElementById('svd-container');
+        const svdSteps = document.querySelectorAll('.svd-step');
+        const reducedVector = document.getElementById('reduced-vector');
+        
+        // Store original dimensions and variance for calculation
+        const originalDims = 962;
+        
+        // Function to update dimension values
+        function updateDimensions() {
+            const dims = parseInt(dimensionsSlider.value);
+            dimValue.textContent = dims;
+            kValue.textContent = dims;
+            kFormulaValue.textContent = dims;
+            keptDimensions.textContent = dims;
+            
+            // Calculate dimension reduction percentage
+            const reduction = ((originalDims - dims) / originalDims) * 100;
+            dimReduction.textContent = reduction.toFixed(1) + '%';
+            
+            // Calculate variance preserved (simplified model)
+            // In reality, this would depend on the actual singular values
+            const variance = Math.max(5, Math.min(95, 100 - 0.75 * reduction));
+            variancePreserved.textContent = variance.toFixed(1) + '%';
+        }
+        
+        // Function to reset visualization
+        function resetVisualization() {
+            svdSteps.forEach(step => {
+                step.classList.remove('visible');
+            });
+            reducedVector.innerHTML = '';
+        }
+        
+        // Function to create a simplified matrix visualization
+        function createMatrixVisualization(rows, cols, container, showContent = false) {
+            // Only show a small sample for visualization
+            const displayRows = Math.min(rows, 5);
+            const displayCols = Math.min(cols, 5);
+            
+            const matrixHtml = document.createElement('div');
+            matrixHtml.className = 'matrix-content';
+            
+            for (let i = 0; i < displayRows; i++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'matrix-row';
+                
+                for (let j = 0; j < displayCols; j++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'matrix-cell';
+                    
+                    if (showContent) {
+                        // Generate some random values for visualization
+                        const value = ((Math.random() * 2) - 1).toFixed(1);
+                        cellDiv.textContent = value;
+                        
+                        // Highlight cells with higher absolute values
+                        if (Math.abs(parseFloat(value)) > 0.5) {
+                            cellDiv.classList.add('highlight');
+                        }
+                    } else {
+                        cellDiv.textContent = '...';
+                    }
+                    
+                    rowDiv.appendChild(cellDiv);
+                }
+                
+                // Add ellipsis if there are more columns
+                if (cols > displayCols) {
+                    const ellipsisCell = document.createElement('div');
+                    ellipsisCell.className = 'matrix-cell';
+                    ellipsisCell.textContent = '...';
+                    rowDiv.appendChild(ellipsisCell);
+                }
+                
+                matrixHtml.appendChild(rowDiv);
+            }
+            
+            // Add ellipsis row if there are more rows
+            if (rows > displayRows) {
+                const ellipsisRow = document.createElement('div');
+                ellipsisRow.className = 'matrix-row';
+                
+                for (let j = 0; j < displayCols + (cols > displayCols ? 1 : 0); j++) {
+                    const ellipsisCell = document.createElement('div');
+                    ellipsisCell.className = 'matrix-cell';
+                    ellipsisCell.textContent = '...';
+                    ellipsisRow.appendChild(ellipsisCell);
+                }
+                
+                matrixHtml.appendChild(ellipsisRow);
+            }
+            
+            container.innerHTML = '';
+            container.appendChild(matrixHtml);
+        }
+        
+        // Function to visualize reduced vector
+        function visualizeReducedVector(dimensions) {
+            reducedVector.innerHTML = '';
+            
+            // Create a random reduced vector for demonstration
+            for (let i = 0; i < dimensions; i++) {
+                // Only show first 10 dimensions and last 2 for large dimension counts
+                if (dimensions > 12 && i > 8 && i < dimensions - 2) {
+                    if (i === 9) {
+                        const ellipsisRow = document.createElement('div');
+                        ellipsisRow.style.textAlign = 'center';
+                        ellipsisRow.style.padding = '5px';
+                        ellipsisRow.textContent = '...';
+                        reducedVector.appendChild(ellipsisRow);
+                    }
+                    continue;
+                }
+                
+                const row = document.createElement('div');
+                row.className = 'reduced-row';
+                
+                // Generate random value between -1 and 1
+                const value = (Math.random() * 2) - 1;
+                
+                // Scale for visualization (use absolute value for bar width)
+                const scaledWidth = Math.abs(value) * 100;
+                
+                row.innerHTML = `
+                    <div class="reduced-label">Dim ${i + 1}</div>
+                    <div class="reduced-value">
+                        <div class="reduced-bar" style="width: ${scaledWidth}%"></div>
+                        <div class="reduced-text">${value.toFixed(4)}</div>
+                    </div>
+                `;
+                
+                reducedVector.appendChild(row);
+            }
+            
+            // Animate the bars
+            setTimeout(() => {
+                const bars = document.querySelectorAll('.reduced-bar');
+                bars.forEach(bar => {
+                    const width = bar.style.width;
+                    bar.style.width = '0';
+                    setTimeout(() => {
+                        bar.style.transform = `scaleX(${parseInt(width) / 100})`;
+                    }, 100);
+                });
+            }, 300);
+        }
+        
+        // Function to perform SVD visualization
+        function visualizeSVD() {
+            // Reset visualization
+            resetVisualization();
+            
+            // Get selected dimensions
+            const dimensions = parseInt(dimensionsSlider.value);
+            updateDimensions();
+            
+            // Show each step with animation
+            const originalMatrixStep = document.getElementById('original-matrix-step');
+            originalMatrixStep.classList.add('visible');
+            
+            // Create original matrix visualization
+            const originalMatrixViz = document.getElementById('original-matrix-viz');
+            createMatrixVisualization(6, originalDims, originalMatrixViz);
+            
+            // Show SVD decomposition step
+            setTimeout(() => {
+                const svdDecompositionStep = document.getElementById('svd-decomposition-step');
+                svdDecompositionStep.classList.add('visible');
+                
+                // Update matrix dimensions in the visualization
+                const matrixDims = svdDecompositionStep.querySelectorAll('.matrix-dims');
+                matrixDims[1].textContent = `(6 × ${dimensions})`;
+                matrixDims[2].textContent = `(${dimensions} × ${dimensions})`;
+                matrixDims[3].textContent = `(${dimensions} × ${originalDims})`;
+                
+                // Create matrix visualizations
+                const matrixContents = svdDecompositionStep.querySelectorAll('.matrix-content');
+                createMatrixVisualization(6, originalDims, matrixContents[0]);
+                createMatrixVisualization(6, dimensions, matrixContents[1], true);
+                
+                // Create diagonal matrix for Sigma
+                const sigmaMatrix = document.createElement('div');
+                sigmaMatrix.className = 'matrix-content';
+                for (let i = 0; i < Math.min(5, dimensions); i++) {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'matrix-row';
+                    
+                    for (let j = 0; j < Math.min(5, dimensions); j++) {
+                        const cellDiv = document.createElement('div');
+                        cellDiv.className = 'matrix-cell';
+                        
+                        // Show decreasing values on the diagonal
+                        if (i === j) {
+                            const value = (1 - (i * 0.2)).toFixed(1);
+                            cellDiv.textContent = value;
+                            cellDiv.classList.add('highlight');
+                        } else {
+                            cellDiv.textContent = '0';
+                        }
+                        
+                        rowDiv.appendChild(cellDiv);
+                    }
+                    
+                    if (dimensions > 5) {
+                        const ellipsisCell = document.createElement('div');
+                        ellipsisCell.className = 'matrix-cell';
+                        ellipsisCell.textContent = '...';
+                        rowDiv.appendChild(ellipsisCell);
+                    }
+                    
+                    sigmaMatrix.appendChild(rowDiv);
+                }
+                
+                if (dimensions > 5) {
+                    const ellipsisRow = document.createElement('div');
+                    ellipsisRow.className = 'matrix-row';
+                    
+                    for (let j = 0; j < 6; j++) {
+                        const ellipsisCell = document.createElement('div');
+                        ellipsisCell.className = 'matrix-cell';
+                        ellipsisCell.textContent = '...';
+                        ellipsisRow.appendChild(ellipsisCell);
+                    }
+                    
+                    sigmaMatrix.appendChild(ellipsisRow);
+                }
+                
+                matrixContents[2].innerHTML = '';
+                matrixContents[2].appendChild(sigmaMatrix);
+                
+                createMatrixVisualization(dimensions, originalDims, matrixContents[3], true);
+                
+                // Show dimension reduction step
+                setTimeout(() => {
+                    const dimensionReductionStep = document.getElementById('dimension-reduction-step');
+                    dimensionReductionStep.classList.add('visible');
+                    
+                    // Show latent semantics step
+                    setTimeout(() => {
+                        const latentSemanticsStep = document.getElementById('latent-semantics-step');
+                        latentSemanticsStep.classList.add('visible');
+                        
+                        // Show reduced vector step
+                        setTimeout(() => {
+                            const reducedVectorStep = document.getElementById('reduced-vector-step');
+                            reducedVectorStep.classList.add('visible');
+                            
+                            // Visualize reduced vector
+                            visualizeReducedVector(dimensions);
+                        }, 1000);
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }
+        
+        // Event listeners
+        dimensionsSlider.addEventListener('input', updateDimensions);
+        processBtn.addEventListener('click', visualizeSVD);
+        resetBtn.addEventListener('click', resetVisualization);
+        
+        // Initialize dimensions
+        updateDimensions();
+        
+        // Initial visualization on page load
+        window.addEventListener('load', () => {
+            setTimeout(visualizeSVD, 500);
+        });
+    </script>
+</body>
+</html>

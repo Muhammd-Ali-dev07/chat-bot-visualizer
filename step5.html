@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 5: Cosine Similarity - WorldOS Linear Algebra Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #00bfa5;
+            --bg-dark: #1e1e2f;
+            --bg-darker: #151525;
+            --text-light: #f1f1f1;
+            --window-bg: rgba(42, 42, 58, 0.95);
+            --accent-color: #ff5f57;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(30, 30, 40, 0.8);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo span {
+            margin-left: 10px;
+        }
+
+        .steps-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-btn {
+            padding: 8px 15px;
+            background: rgba(74, 108, 247, 0.2);
+            border: 1px solid rgba(74, 108, 247, 0.5);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .step-btn:hover {
+            background: rgba(74, 108, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .step-btn.active {
+            background: rgba(74, 108, 247, 0.6);
+            box-shadow: 0 4px 10px rgba(74, 108, 247, 0.3);
+        }
+
+        main {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .visualization {
+            flex: 2;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .explanation {
+            flex: 1;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .math-formula {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary-color);
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .interactive-area {
+            flex: 1;
+            position: relative;
+            background: rgba(25, 25, 35, 0.6);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.primary {
+            background: rgba(74, 108, 247, 0.4);
+        }
+
+        .control-btn.primary:hover {
+            background: rgba(74, 108, 247, 0.6);
+        }
+
+        input[type="text"] {
+            padding: 8px 15px;
+            background: rgba(25, 25, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .cosine-container {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+        }
+
+        .cosine-step {
+            background: rgba(30, 30, 40, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .cosine-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cosine-step-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .cosine-formula {
+            font-family: 'Courier New', monospace;
+            background: rgba(25, 25, 35, 0.7);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .vector-visualization {
+            display: flex;
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .vector-column {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .vector-title {
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .vector-values {
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .vector-value {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .vector-dimension {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .cosine-calculation {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+            animation: fadeIn 0.5s;
+        }
+
+        .calc-step {
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .calc-step-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+        }
+
+        .calc-value {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .cosine-visualization {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cosine-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .angle-label {
+            position: absolute;
+            font-weight: bold;
+            color: var(--secondary-color);
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+        }
+
+        .result-container {
+            text-align: center;
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .similarity-result {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin: 10px 0;
+        }
+
+        .similarity-scale {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .scale-track {
+            height: 8px;
+            flex: 1;
+            background: linear-gradient(to right, #ff5f57, #ffbd4c, #4a6cf7, #00bfa5);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .scale-marker {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: left 1s ease-out;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .pattern-matches {
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .patterns-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .pattern-match {
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pattern-text {
+            flex: 1;
+        }
+
+        .pattern-intent {
+            background: rgba(74, 108, 247, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 0 10px;
+        }
+
+        .pattern-score {
+            font-weight: bold;
+            width: 70px;
+            text-align: right;
+        }
+
+        .best-match {
+            border: 2px solid var(--secondary-color);
+            background: rgba(0, 191, 165, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(30, 30, 40, 0.8);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .next-step, .prev-step {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .next-step:hover, .prev-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 191, 165, 0.4);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            🧠 <span>WorldOS Linear Algebra Visualizer</span>
+        </div>
+        <div class="steps-nav">
+            <a href="step1.html" class="step-btn">1. Text Preprocessing</a>
+            <a href="step2.html" class="step-btn">2. Vector Representation</a>
+            <a href="step3.html" class="step-btn">3. TF-IDF Weighting</a>
+            <a href="step4.html" class="step-btn">4. Dimension Reduction</a>
+            <a href="step5.html" class="step-btn active">5. Cosine Similarity</a>
+            <a href="step6.html" class="step-btn">6. Response Selection</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="visualization">
+            <div class="controls">
+                <input type="text" id="user-input" placeholder="Type a message to compare..." value="how does linear algebra help with text understanding">
+                <button id="process-btn" class="control-btn primary">Calculate Similarity</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            <div class="interactive-area" id="interactive-area">
+                <h3>Cosine Similarity Calculation</h3>
+                
+                <div class="cosine-container" id="cosine-container">
+                    <div class="cosine-step" id="vector-step">
+                        <div class="cosine-step-title">Step 1: Compare Query to Known Patterns</div>
+                        <div class="cosine-formula">
+                            cosine(query, pattern) = (query · pattern) / (||query|| × ||pattern||)
+                        </div>
+                        <div class="vector-visualization">
+                            <div class="vector-column">
+                                <div class="vector-title">Your Query Vector</div>
+                                <div class="vector-values" id="query-vector">
+                                    <!-- Query vector values will be displayed here -->
+                                </div>
+                            </div>
+                            <div class="vector-column">
+                                <div class="vector-title">Pattern Vector</div>
+                                <div class="vector-values" id="pattern-vector">
+                                    <!-- Pattern vector values will be displayed here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cosine-step" id="calculation-step">
+                        <div class="cosine-step-title">Step 2: Compute Cosine Similarity</div>
+                        <div class="cosine-calculation" id="cosine-calculation">
+                            <div class="calc-step">
+                                <div class="calc-step-title">A. Calculate Dot Product</div>
+                                <div class="calc-value" id="dot-product">
+                                    query · pattern = v₁w₁ + v₂w₂ + ... + vₙwₙ
+                                </div>
+                            </div>
+                            <div class="calc-step">
+                                <div class="calc-step-title">B. Calculate Vector Magnitudes</div>
+                                <div class="calc-value" id="magnitudes">
+                                    ||query|| = √(v₁² + v₂² + ... + vₙ²)
+                                    <br>
+                                    ||pattern|| = √(w₁² + w₂² + ... + wₙ²)
+                                </div>
+                            </div>
+                            <div class="calc-step">
+                                <div class="calc-step-title">C. Calculate Cosine Similarity</div>
+                                <div class="calc-value" id="cosine-value">
+                                    cosine(query, pattern) = (query · pattern) / (||query|| × ||pattern||)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="cosine-visualization">
+                            <canvas id="cosine-canvas" class="cosine-canvas"></canvas>
+                            <div class="angle-label" id="angle-label"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="cosine-step" id="result-step">
+                        <div class="cosine-step-title">Step 3: Similarity Score</div>
+                        <div class="result-container">
+                            <div class="similarity-result" id="similarity-result">0.00</div>
+                            <div class="similarity-scale">
+                                <div class="scale-track">
+                                    <div class="scale-marker" id="scale-marker" style="left: 0%;"></div>
+                                </div>
+                                <div class="scale-labels">
+                                    <span>0.0 (Different)</span>
+                                    <span>0.5 (Somewhat Similar)</span>
+                                    <span>1.0 (Identical)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cosine-step" id="patterns-step">
+                        <div class="cosine-step-title">Step 4: Find Best Matching Pattern</div>
+                        <div class="pattern-matches">
+                            <div class="patterns-title">Top Matching Patterns:</div>
+                            <div id="pattern-matches">
+                                <!-- Pattern matches will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="step4.html" class="prev-step">← Previous: Dimension Reduction</a>
+                <a href="step6.html" class="next-step">Next: Response Selection →</a>
+            </div>
+        </section>
+
+        <section class="explanation">
+            <h2>Cosine Similarity</h2>
+            <p>
+                After preprocessing text, converting it to TF-IDF weighted vectors, and optionally reducing 
+                dimensions with SVD, WorldOS needs to compare the query vector to known patterns to find the 
+                best match. For this, it uses cosine similarity in the <code>IntentClassifier.predict</code> method.
+            </p>
+            
+            <h3>Why Cosine Similarity?</h3>
+            <p>
+                Cosine similarity measures the cosine of the angle between two vectors, making it ideal for 
+                text comparison because:
+            </p>
+            <ul>
+                <li>It's invariant to document length (only direction matters, not magnitude)</li>
+                <li>It works well with sparse, high-dimensional vectors</li>
+                <li>It provides values in a bounded range [0,1] for non-negative vectors</li>
+                <li>A value of 1 means identical direction, 0 means orthogonal (completely different)</li>
+            </ul>
+            
+            <h3>Cosine Similarity Formula</h3>
+            <p>
+                The cosine similarity between two vectors A and B is calculated as:
+            </p>
+            
+            <div class="math-formula">
+                cos(θ) = (A·B) / (||A|| × ||B||)
+            </div>
+            
+            <p>Where:</p>
+            <ul>
+                <li>A·B is the dot product of vectors A and B</li>
+                <li>||A|| is the magnitude (Euclidean norm) of vector A</li>
+                <li>||B|| is the magnitude of vector B</li>
+                <li>θ is the angle between the vectors</li>
+            </ul>
+            
+            <h3>Implementation in WorldOS</h3>
+            <p>
+                In the WorldOS codebase, cosine similarity is calculated in several places:
+            </p>
+            
+            <ol>
+                <li>
+                    <strong>IntentClassifier.predict():</strong> Uses scikit-learn's <code>cosine_similarity</code> 
+                    function to compare the query vector to all pattern vectors:
+                    <div class="math-formula">
+                        similarities = cosine_similarity(vector_reduced, self.X_reduced).flatten()
+                    </div>
+                </li>
+                <li>
+                    <strong>ConversationMemory.find_related_exchanges():</strong> Uses cosine similarity to 
+                    find related previous conversations:
+                    <div class="math-formula">
+                        sim = cosine_similarity(user_vector.reshape(1, -1), input_vector.reshape(1, -1))[0][0]
+                    </div>
+                </li>
+                <li>
+                    <strong>SemanticMatcher:</strong> Uses various similarity calculations including cosine 
+                    for more complex semantic matching.
+                </li>
+            </ol>
+            
+            <h3>Finding the Best Match</h3>
+            <p>
+                After calculating similarities between the query and all patterns, WorldOS finds the best match:
+            </p>
+            
+            <div class="math-formula">
+                best_idx = np.argmax(similarities)
+                <br>
+                best_score = similarities[best_idx]
+                <br>
+                best_tag = self.pattern_tags[best_idx]
+            </div>
+            
+            <h3>Confidence Threshold</h3>
+            <p>
+                WorldOS applies a confidence threshold to determine if the match is reliable:
+            </p>
+            
+            <div class="math-formula">
+                "tag": best_tag if best_score >= confidence_threshold else "fallback"
+            </div>
+            
+            <p>
+                If the cosine similarity score is below the threshold (default 0.3), the system returns a 
+                "fallback" intent instead of a potentially incorrect match. This helps prevent false positives.
+            </p>
+            
+            <h3>Linear Algebra Connection</h3>
+            <p>
+                Cosine similarity demonstrates several key linear algebra concepts:
+            </p>
+            <ul>
+                <li><strong>Dot product:</strong> A fundamental operation that captures the interaction between vectors</li>
+                <li><strong>Vector norms:</strong> Measures of vector magnitude in Euclidean space</li>
+                <li><strong>Vector angles:</strong> Cosine similarity measures the angle between vectors</li>
+                <li><strong>Vector space geometry:</strong> Similar documents are angularly closer in the vector space</li>
+            </ul>
+            
+            <p>
+                By using cosine similarity on the reduced TF-IDF vectors, WorldOS effectively captures 
+                semantic similarities between text inputs regardless of length, allowing it to match user 
+                queries to the most relevant intents with high accuracy.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        WorldOS Linear Algebra Visualizer - Created for Linear Algebra Project Presentation
+    </footer>
+
+    <script>
+        // Define sample patterns for demonstration
+        const patterns = [
+            {
+                text: "how does linear algebra help with text understanding",
+                intent: "linear_algebra_explanation",
+                vector: [0.42, 0.28, 0.52, 0.39, 0.25, 0.22, 0.18, 0.08]
+            },
+            {
+                text: "explain text processing using matrices",
+                intent: "text_processing",
+                vector: [0.12, 0.43, 0.15, 0.56, 0.38, 0.31, 0.22, 0.04]
+            },
+            {
+            text: "what is vector space model for text",
+                intent: "vector_space_model",
+                vector: [0.28, 0.18, 0.63, 0.22, 0.45, 0.12, 0.29, 0.11]
+            },
+            {
+                text: "how to use cosine similarity for text comparison",
+                intent: "cosine_similarity",
+                vector: [0.15, 0.22, 0.13, 0.18, 0.52, 0.63, 0.25, 0.16]
+            },
+            {
+                text: "tell me about svd dimension reduction",
+                intent: "dimension_reduction",
+                vector: [0.05, 0.34, 0.12, 0.28, 0.16, 0.18, 0.56, 0.47]
+            }
+        ];
+        
+        // Function to generate vector from text (simplified)
+        function generateVector(text) {
+            // This is a simplified mock for demonstration
+            // In real system, this would use the TF-IDF and SVD steps
+            const seed = text.length; // Use text length as a seed for reproducibility
+            const vector = [];
+            
+            // Generate 8-dimensional vector based on text content
+            for (let i = 0; i < 8; i++) {
+                // Use a pseudo-random but deterministic approach based on character codes
+                let value = 0;
+                for (let j = 0; j < text.length; j++) {
+                    value += text.charCodeAt(j) * Math.sin(i * j / seed);
+                }
+                // Normalize to [0,1] range
+                value = Math.abs(Math.sin(value)) * 0.7 + 0.05;
+                vector.push(parseFloat(value.toFixed(2)));
+            }
+            
+            return vector;
+        }
+        
+        // Calculate dot product of two vectors
+        function dotProduct(vecA, vecB) {
+            let product = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                product += vecA[i] * vecB[i];
+            }
+            return product;
+        }
+        
+        // Calculate magnitude of a vector
+        function magnitude(vec) {
+            let sum = 0;
+            for (let i = 0; i < vec.length; i++) {
+                sum += vec[i] * vec[i];
+            }
+            return Math.sqrt(sum);
+        }
+        
+        // Calculate cosine similarity
+        function cosineSimilarity(vecA, vecB) {
+            const dot = dotProduct(vecA, vecB);
+            const magA = magnitude(vecA);
+            const magB = magnitude(vecB);
+            return dot / (magA * magB);
+        }
+        
+        // Calculate cosine similarity for all patterns
+        function calculateAllSimilarities(queryVector) {
+            const similarities = [];
+            
+            for (const pattern of patterns) {
+                const similarity = cosineSimilarity(queryVector, pattern.vector);
+                similarities.push({
+                    text: pattern.text,
+                    intent: pattern.intent,
+                    similarity: similarity,
+                    vector: pattern.vector
+                });
+            }
+            
+            // Sort by similarity in descending order
+            similarities.sort((a, b) => b.similarity - a.similarity);
+            
+            return similarities;
+        }
+        
+        // Get DOM elements
+        const userInput = document.getElementById('user-input');
+        const processBtn = document.getElementById('process-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const vectorStep = document.getElementById('vector-step');
+        const calculationStep = document.getElementById('calculation-step');
+        const resultStep = document.getElementById('result-step');
+        const patternsStep = document.getElementById('patterns-step');
+        const queryVector = document.getElementById('query-vector');
+        const patternVector = document.getElementById('pattern-vector');
+        const dotProductElement = document.getElementById('dot-product');
+        const magnitudesElement = document.getElementById('magnitudes');
+        const cosineValue = document.getElementById('cosine-value');
+        const cosineCanvas = document.getElementById('cosine-canvas');
+        const angleLabel = document.getElementById('angle-label');
+        const similarityResult = document.getElementById('similarity-result');
+        const scaleMarker = document.getElementById('scale-marker');
+        const patternMatches = document.getElementById('pattern-matches');
+        
+        // Function to reset visualization
+        function resetVisualization() {
+            vectorStep.classList.remove('visible');
+            calculationStep.classList.remove('visible');
+            resultStep.classList.remove('visible');
+            patternsStep.classList.remove('visible');
+            
+            queryVector.innerHTML = '';
+            patternVector.innerHTML = '';
+            dotProductElement.innerHTML = 'query · pattern = v₁w₁ + v₂w₂ + ... + vₙwₙ';
+            magnitudesElement.innerHTML = '||query|| = √(v₁² + v₂² + ... + vₙ²)<br>||pattern|| = √(w₁² + w₂² + ... + wₙ²)';
+            cosineValue.innerHTML = 'cosine(query, pattern) = (query · pattern) / (||query|| × ||pattern||)';
+            similarityResult.textContent = '0.00';
+            scaleMarker.style.left = '0%';
+            patternMatches.innerHTML = '';
+            
+            // Clear canvas
+            const ctx = cosineCanvas.getContext('2d');
+            ctx.clearRect(0, 0, cosineCanvas.width, cosineCanvas.height);
+        }
+        
+        // Function to display vector
+        function displayVector(vector, container) {
+            container.innerHTML = '';
+            
+            for (let i = 0; i < vector.length; i++) {
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'vector-value';
+                valueDiv.innerHTML = `
+                    <span class="vector-dimension">Dim ${i + 1}:</span>
+                    <span>${vector[i].toFixed(2)}</span>
+                `;
+                container.appendChild(valueDiv);
+            }
+        }
+        
+        // Function to display dot product calculation
+        function displayDotProductCalc(queryVec, patternVec, dot) {
+            let formula = 'query · pattern = ';
+            
+            for (let i = 0; i < queryVec.length; i++) {
+                formula += `(${queryVec[i].toFixed(2)} × ${patternVec[i].toFixed(2)})`;
+                if (i < queryVec.length - 1) {
+                    formula += ' + ';
+                }
+            }
+            
+            formula += ` = ${dot.toFixed(4)}`;
+            dotProductElement.innerHTML = formula;
+        }
+        
+        // Function to display magnitude calculations
+        function displayMagnitudes(queryVec, patternVec, magQuery, magPattern) {
+            let queryFormula = '||query|| = √(';
+            let patternFormula = '||pattern|| = √(';
+            
+            for (let i = 0; i < queryVec.length; i++) {
+                queryFormula += `${queryVec[i].toFixed(2)}²`;
+                patternFormula += `${patternVec[i].toFixed(2)}²`;
+                
+                if (i < queryVec.length - 1) {
+                    queryFormula += ' + ';
+                    patternFormula += ' + ';
+                }
+            }
+            
+            queryFormula += `) = ${magQuery.toFixed(4)}`;
+            patternFormula += `) = ${magPattern.toFixed(4)}`;
+            
+            magnitudesElement.innerHTML = queryFormula + '<br>' + patternFormula;
+        }
+        
+        // Function to display cosine similarity calculation
+        function displayCosineSimilarity(dot, magQuery, magPattern, similarity) {
+            const formula = `
+                cosine(query, pattern) = 
+                (${dot.toFixed(4)}) / (${magQuery.toFixed(4)} × ${magPattern.toFixed(4)}) = 
+                ${dot.toFixed(4)} / ${(magQuery * magPattern).toFixed(4)} = 
+                ${similarity.toFixed(4)}
+            `;
+            
+            cosineValue.innerHTML = formula;
+        }
+        
+        // Function to draw cosine visualization
+        function drawCosineVisualization(similarity) {
+            const canvas = cosineCanvas;
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions to match CSS dimensions
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Calculate center coordinates
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Calculate angle from similarity (0 = 90 degrees, 1 = 0 degrees)
+            const angleInRadians = Math.acos(similarity);
+            const angleInDegrees = angleInRadians * (180 / Math.PI);
+            
+            // Set drawing styles
+            ctx.lineWidth = 3;
+            
+            // Draw origin point
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw radius line for reference
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 100, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Draw query vector (fixed horizontal vector)
+            const queryLength = 120;
+            ctx.strokeStyle = '#4a6cf7';
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + queryLength, centerY);
+            ctx.stroke();
+            
+            // Draw pattern vector (with angle based on similarity)
+            const patternLength = 120;
+            const patternX = centerX + patternLength * Math.cos(angleInRadians);
+            const patternY = centerY - patternLength * Math.sin(angleInRadians);
+            
+            ctx.strokeStyle = '#00bfa5';
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(patternX, patternY);
+            ctx.stroke();
+            
+            // Draw arc representing the angle
+            ctx.strokeStyle = 'rgba(255, 95, 87, 0.6)';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 40, 0, -angleInRadians, true);
+            ctx.stroke();
+            
+            // Add vector labels
+            ctx.fillStyle = '#4a6cf7';
+            ctx.font = '14px Arial';
+            ctx.fillText('Query Vector', centerX + queryLength + 10, centerY + 5);
+            
+            ctx.fillStyle = '#00bfa5';
+            ctx.fillText('Pattern Vector', patternX + 10, patternY - 10);
+            
+            // Update angle label
+            angleLabel.textContent = `θ = ${angleInDegrees.toFixed(2)}°`;
+            angleLabel.style.left = `${centerX + 25}px`;
+            angleLabel.style.top = `${centerY + 20}px`;
+        }
+        
+        // Function to display pattern matches
+        function displayPatternMatches(similarities) {
+            patternMatches.innerHTML = '';
+            
+            for (let i = 0; i < similarities.length; i++) {
+                const match = similarities[i];
+                const matchDiv = document.createElement('div');
+                
+                matchDiv.className = `pattern-match ${i === 0 ? 'best-match' : ''}`;
+                matchDiv.innerHTML = `
+                    <div class="pattern-text">${match.text}</div>
+                    <div class="pattern-intent">${match.intent}</div>
+                    <div class="pattern-score">${match.similarity.toFixed(4)}</div>
+                `;
+                
+                patternMatches.appendChild(matchDiv);
+                
+                // Only show top 3 matches
+                if (i >= 2) break;
+            }
+        }
+        
+        // Function to process text and calculate similarities
+        function processText() {
+            // Reset visualization
+            resetVisualization();
+            
+            // Get input text
+            const text = userInput.value || "how does linear algebra help with text understanding";
+            
+            // Generate vector for query
+            const queryVec = generateVector(text);
+            
+            // Calculate similarities with all patterns
+            const similarities = calculateAllSimilarities(queryVec);
+            
+            // Get best match
+            const bestMatch = similarities[0];
+            const patternVec = bestMatch.vector;
+            const similarity = bestMatch.similarity;
+            
+            // Display vectors
+            displayVector(queryVec, queryVector);
+            displayVector(patternVec, patternVector);
+            
+            // Show first step with animation
+            vectorStep.classList.add('visible');
+            
+            // Delay to show next step
+            setTimeout(() => {
+                // Calculate dot product and magnitudes
+                const dot = dotProduct(queryVec, patternVec);
+                const magQuery = magnitude(queryVec);
+                const magPattern = magnitude(patternVec);
+                
+                // Display calculations
+                displayDotProductCalc(queryVec, patternVec, dot);
+                displayMagnitudes(queryVec, patternVec, magQuery, magPattern);
+                displayCosineSimilarity(dot, magQuery, magPattern, similarity);
+                
+                // Draw cosine visualization
+                drawCosineVisualization(similarity);
+                
+                // Show calculation step with animation
+                calculationStep.classList.add('visible');
+                
+                // Delay to show next step
+                setTimeout(() => {
+                    // Update similarity result
+                    similarityResult.textContent = similarity.toFixed(4);
+                    
+                    // Update scale marker position
+                    scaleMarker.style.left = `${similarity * 100}%`;
+                    
+                    // Show result step with animation
+                    resultStep.classList.add('visible');
+                    
+                    // Delay to show next step
+                    setTimeout(() => {
+                        // Display pattern matches
+                        displayPatternMatches(similarities);
+                        
+                        // Show patterns step with animation
+                        patternsStep.classList.add('visible');
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }
+        
+        // Handle window resize for canvas
+        window.addEventListener('resize', () => {
+            // Redraw canvas if the calculation step is visible
+            if (calculationStep.classList.contains('visible')) {
+                const similarityValue = parseFloat(similarityResult.textContent);
+                drawCosineVisualization(similarityValue);
+            }
+        });
+        
+        // Event listeners
+        processBtn.addEventListener('click', processText);
+        resetBtn.addEventListener('click', resetVisualization);
+        
+        // Initial processing on page load
+        window.addEventListener('load', () => {
+            // Set canvas dimensions
+            cosineCanvas.width = cosineCanvas.clientWidth;
+            cosineCanvas.height = cosineCanvas.clientHeight;
+            
+            // Start the visualization after a short delay
+            setTimeout(processText, 500);
+        });
+    </script>
+</body>
+</html>

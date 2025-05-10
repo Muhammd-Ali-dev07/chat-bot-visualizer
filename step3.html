@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 3: TF-IDF Weighting - WorldOS Linear Algebra Visualizer</title>
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #00bfa5;
+            --bg-dark: #1e1e2f;
+            --bg-darker: #151525;
+            --text-light: #f1f1f1;
+            --window-bg: rgba(42, 42, 58, 0.95);
+            --accent-color: #ff5f57;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(30, 30, 40, 0.8);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo span {
+            margin-left: 10px;
+        }
+
+        .steps-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-btn {
+            padding: 8px 15px;
+            background: rgba(74, 108, 247, 0.2);
+            border: 1px solid rgba(74, 108, 247, 0.5);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .step-btn:hover {
+            background: rgba(74, 108, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .step-btn.active {
+            background: rgba(74, 108, 247, 0.6);
+            box-shadow: 0 4px 10px rgba(74, 108, 247, 0.3);
+        }
+
+        main {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .visualization {
+            flex: 2;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .explanation {
+            flex: 1;
+            background: rgba(30, 30, 40, 0.7);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .math-formula {
+            background: rgba(25, 25, 35, 0.7);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary-color);
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .interactive-area {
+            flex: 1;
+            position: relative;
+            background: rgba(25, 25, 35, 0.6);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.primary {
+            background: rgba(74, 108, 247, 0.4);
+        }
+
+        .control-btn.primary:hover {
+            background: rgba(74, 108, 247, 0.6);
+        }
+
+        input[type="text"] {
+            padding: 8px 15px;
+            background: rgba(25, 25, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .token {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 3px;
+            border-radius: 4px;
+            background: rgba(74, 108, 247, 0.3);
+            animation: fadeIn 0.5s;
+        }
+
+        .token.dimension {
+            background: rgba(0, 191, 165, 0.3);
+            font-weight: bold;
+        }
+
+        .vector-visualization {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .vector-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .vector-label {
+            width: 150px;
+            text-align: right;
+            padding-right: 15px;
+            font-weight: bold;
+        }
+
+        .vector-value {
+            display: flex;
+            flex: 1;
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 4px;
+            height: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vector-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transform-origin: left;
+            transform: scaleX(0);
+            transition: transform 1s ease-out;
+        }
+
+        .vector-text {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .calculation-steps {
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .calculation-step {
+            background: rgba(30, 30, 40, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .calculation-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .calculation-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .calculation-formula {
+            font-family: 'Courier New', monospace;
+            background: rgba(25, 25, 35, 0.7);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .calculation-result {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .tf-idf-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .tf-idf-matrix th, .tf-idf-matrix td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tf-idf-matrix th {
+            background: rgba(74, 108, 247, 0.3);
+        }
+
+        .tf-idf-matrix .highlight {
+            background: rgba(0, 191, 165, 0.2);
+        }
+
+        .tf-idf-matrix .query-row {
+            background: rgba(74, 108, 247, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes highlight {
+            0%, 100% {
+                background: rgba(74, 108, 247, 0.3);
+            }
+            50% {
+                background: rgba(74, 108, 247, 0.7);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(30, 30, 40, 0.8);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .next-step, .prev-step {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .next-step:hover, .prev-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 191, 165, 0.4);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            🧠 <span>WorldOS Linear Algebra Visualizer</span>
+        </div>
+        <div class="steps-nav">
+            <a href="step1.html" class="step-btn">1. Text Preprocessing</a>
+            <a href="step2.html" class="step-btn">2. Vector Representation</a>
+            <a href="step3.html" class="step-btn active">3. TF-IDF Weighting</a>
+            <a href="step4.html" class="step-btn">4. Dimension Reduction</a>
+            <a href="step5.html" class="step-btn">5. Cosine Similarity</a>
+            <a href="step6.html" class="step-btn">6. Response Selection</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="visualization">
+            <div class="controls">
+                <input type="text" id="user-input" placeholder="Type a message to process..." value="linear algebra helps understand text">
+                <button id="process-btn" class="control-btn primary">Process Text</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            <div class="interactive-area" id="interactive-area">
+                <h3>TF-IDF Weighting Process</h3>
+                
+                <div id="processed-tokens">
+                    <p>Preprocessed tokens:</p>
+                </div>
+                
+                <div id="calculation-steps" class="calculation-steps">
+                    <div id="term-freq-step" class="calculation-step">
+                        <div class="calculation-title">Step 1: Calculate Term Frequency (TF)</div>
+                        <div class="calculation-formula">
+                            TF(t, d) = (Number of times term t appears in document d) / (Total terms in document d)
+                        </div>
+                        <div id="tf-calculations"></div>
+                    </div>
+                    
+                    <div id="idf-step" class="calculation-step">
+                        <div class="calculation-title">Step 2: Calculate Inverse Document Frequency (IDF)</div>
+                        <div class="calculation-formula">
+                            IDF(t) = log(Total number of documents / Number of documents containing term t)
+                        </div>
+                        <div id="idf-calculations"></div>
+                    </div>
+                    
+                    <div id="tfidf-step" class="calculation-step">
+                        <div class="calculation-title">Step 3: Calculate TF-IDF</div>
+                        <div class="calculation-formula">
+                            TF-IDF(t, d) = TF(t, d) × IDF(t)
+                        </div>
+                        <div id="tfidf-calculations"></div>
+                    </div>
+                </div>
+                
+                <div id="matrix-container" style="display: none;">
+                    <h3>TF-IDF Matrix</h3>
+                    <p>The WorldOS system creates a term-document matrix where each cell represents the TF-IDF weight:</p>
+                    <div style="overflow-x: auto;">
+                        <table id="tfidf-matrix" class="tf-idf-matrix">
+                            <thead>
+                                <tr>
+                                    <th>Terms / Documents</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="tfidf-vector-visualization" class="vector-visualization" style="display: none;">
+                    <h3>TF-IDF Weighted Vector</h3>
+                    <p>Your query as a weighted vector (higher values indicate more important terms):</p>
+                    <div id="tfidf-vector-content"></div>
+                </div>
+            </div>
+            <div class="text-center">
+                <a href="step2.html" class="prev-step">← Previous: Vector Representation</a>
+                <a href="step4.html" class="next-step">Next: Dimension Reduction →</a>
+            </div>
+        </section>
+
+        <section class="explanation">
+            <h2>TF-IDF Weighting</h2>
+            <p>
+                The raw count vector created in the previous step assigns equal importance to all terms. 
+                However, some words are more meaningful for understanding a document's content than others.
+                For example, uncommon terms like "eigenvalue" carry more specific meaning than common terms like "help".
+            </p>
+            
+            <p>
+                To address this issue, WorldOS uses the <code>TfidfVectorizer</code> class to apply 
+                Term Frequency-Inverse Document Frequency (TF-IDF) weighting to the vector representation. 
+                This weighting scheme increases the importance of terms that are:
+            </p>
+            <ul>
+                <li>Frequent in the current document (high term frequency)</li>
+                <li>Rare across the corpus of all documents (high inverse document frequency)</li>
+            </ul>
+            
+            <h3>Term Frequency (TF)</h3>
+            <p>
+                The term frequency measures how often a term appears in a document. It's based on the 
+                count of occurrences, but is typically normalized to account for document length.
+            </p>
+            
+            <div class="math-formula">
+                TF(t, d) = (Number of times term t appears in document d) / (Total terms in document d)
+            </div>
+            
+            <p>
+                WorldOS implements a variant called "sublinear scaling" by setting <code>sublinear_tf=True</code> 
+                in the TfidfVectorizer, which applies a logarithmic scaling to reduce the impact of high-frequency terms:
+            </p>
+            
+            <div class="math-formula">
+                TF(t, d) = 1 + log(term count)
+            </div>
+            
+            <h3>Inverse Document Frequency (IDF)</h3>
+            <p>
+                The inverse document frequency measures how rare or common a term is across all documents in the corpus. 
+                Terms that appear in many documents receive a lower weight, while rare terms receive a higher weight.
+            </p>
+            
+            <div class="math-formula">
+                IDF(t) = log(Total number of documents / Number of documents containing term t)
+            </div>
+            
+            <h3>TF-IDF Calculation</h3>
+            <p>
+                The final TF-IDF score is simply the product of the term frequency and the inverse document frequency:
+            </p>
+            
+            <div class="math-formula">
+                TF-IDF(t, d) = TF(t, d) × IDF(t)
+            </div>
+            
+            <h3>Term-Document Matrix</h3>
+            <p>
+                In the WorldOS system, the TF-IDF weights form a term-document matrix, where:
+            </p>
+            <ul>
+                <li>Each row represents a document or pattern</li>
+                <li>Each column represents a term in the vocabulary</li>
+                <li>Each cell contains the TF-IDF weight of that term in that document</li>
+            </ul>
+            
+            <div class="math-formula">
+                A = [a₁₁ a₁₂ ... a₁ₙ]
+                    [a₂₁ a₂₂ ... a₂ₙ]
+                    [  ...      ... ]
+                    [aₘ₁ aₘ₂ ... aₘₙ]
+                <br>
+                where aᵢⱼ = TF-IDF weight of term j in document i
+            </div>
+            
+            <h3>Linear Algebra Connection</h3>
+            <p>
+                TF-IDF weighting is a linear transformation applied to the original count vectors, enhancing 
+                the relevance of the representation. This transformation helps create a vector space where:
+            </p>
+            <ul>
+                <li>Important terms have larger magnitudes in their respective dimensions</li>
+                <li>Documents with similar important terms are positioned closer together</li>
+                <li>The impact of common but less meaningful terms is reduced</li>
+            </ul>
+            
+            <p>
+                The resulting TF-IDF vectors are used for all subsequent operations in WorldOS, including 
+                dimension reduction (SVD) and similarity calculations (cosine similarity), providing a more 
+                meaningful basis for text comparison than raw counts.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        WorldOS Linear Algebra Visualizer - Created for Linear Algebra Project Presentation
+    </footer>
+
+    <script>
+        // Define vocabulary for demonstration
+        const vocabulary = [
+            'linear', 'algebra', 'help', 'understand', 'text', 'vector', 'space', 
+            'model', 'matrix', 'dimension', 'reduction', 'similarity', 'cosine',
+            'svd', 'singular', 'value', 'decomposition', 'eigenvalue', 'eigenvector',
+            'transformation', 'basis', 'visualization', 'semantic', 'concept', 'meaning'
+        ];
+        
+        // Define example documents for corpus
+        const documents = [
+            "linear algebra helps understand text vector space models",
+            "matrix operations in dimension reduction",
+            "cosine similarity measures vector similarity",
+            "singular value decomposition reduces dimensions",
+            "text understanding using vector space models",
+            "eigenvalues and eigenvectors in matrix transformations"
+        ];
+        
+        // Get DOM elements
+        const userInput = document.getElementById('user-input');
+        const processBtn = document.getElementById('process-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const processedTokens = document.getElementById('processed-tokens');
+        const termFreqStep = document.getElementById('term-freq-step');
+        const idfStep = document.getElementById('idf-step');
+        const tfidfStep = document.getElementById('tfidf-step');
+        const tfCalculations = document.getElementById('tf-calculations');
+        const idfCalculations = document.getElementById('idf-calculations');
+        const tfidfCalculations = document.getElementById('tfidf-calculations');
+        const matrixContainer = document.getElementById('matrix-container');
+        const tfidfMatrix = document.getElementById('tfidf-matrix');
+        const tfidfVectorVisualization = document.getElementById('tfidf-vector-visualization');
+        const tfidfVectorContent = document.getElementById('tfidf-vector-content');
+        
+        // Simulate stopwords and lemmatization from step 1
+        const stopWords = new Set(['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've",
+            "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 
+            "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 
+            'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 
+            'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 
+            'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 
+            'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 
+            'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 
+            'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 
+            'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very']);
+            
+        const lemmatization = {
+            'helps': 'help',
+            'helping': 'help',
+            'helped': 'help',
+            'understanding': 'understand',
+            'understood': 'understand',
+            'understands': 'understand',
+            'texts': 'text',
+            'matrices': 'matrix',
+            'vectors': 'vector'
+        };
+        
+        // Function to preprocess text (simplified version of step 1)
+        function preprocessText(text) {
+            // Convert to lowercase
+            const lowercase = text.toLowerCase();
+            
+            // Remove punctuation
+            const noPunctuation = lowercase.replace(/[^\w\s]/g, '');
+            
+            // Split into tokens
+            const tokens = noPunctuation.split(/\s+/).filter(token => token.length > 0);
+            
+            // Remove stopwords and lemmatize
+            const processedTokens = [];
+            for (const token of tokens) {
+                if (!stopWords.has(token)) {
+                    const lemmatized = lemmatization[token] || token;
+                    processedTokens.push(lemmatized);
+                }
+            }
+            
+            return processedTokens;
+        }
+        
+        // Function to count term occurrences in tokens
+        function countTerms(tokens) {
+            const counts = {};
+            for (const token of tokens) {
+                if (counts[token]) {
+                    counts[token]++;
+                } else {
+                    counts[token] = 1;
+                }
+            }
+            return counts;
+        }
+        
+        // Function to calculate term frequency (TF)
+        function calculateTF(termCounts, totalTerms) {
+            const tf = {};
+            for (const term in termCounts) {
+                // Using sublinear scaling: 1 + log(term_count)
+                tf[term] = 1 + Math.log(termCounts[term]);
+            }
+            return tf;
+        }
+        
+        // Function to calculate inverse document frequency (IDF)
+        function calculateIDF(term, documents) {
+            // Count documents containing the term
+            let docsWithTerm = 0;
+            for (const doc of documents) {
+                if (doc.includes(term)) {
+                    docsWithTerm++;
+                }
+            }
+            // Add 1 to both numerator and denominator to avoid division by zero (smoothing)
+            return Math.log((documents.length + 1) / (docsWithTerm + 1)) + 1;
+        }
+        
+        // Function to calculate TF-IDF
+        function calculateTFIDF(tf, idf) {
+            const tfidf = {};
+            for (const term in tf) {
+                tfidf[term] = tf[term] * idf[term];
+            }
+            return tfidf;
+        }
+        
+        // Function to reset the visualization
+        function resetVisualization() {
+            processedTokens.innerHTML = '<p>Preprocessed tokens:</p>';
+            tfCalculations.innerHTML = '';
+            idfCalculations.innerHTML = '';
+            tfidfCalculations.innerHTML = '';
+            termFreqStep.classList.remove('visible');
+            idfStep.classList.remove('visible');
+            tfidfStep.classList.remove('visible');
+            matrixContainer.style.display = 'none';
+            tfidfVectorVisualization.style.display = 'none';
+            tfidfVectorContent.innerHTML = '';
+            
+            // Reset matrix
+            const headerRow = tfidfMatrix.querySelector('thead tr');
+            headerRow.innerHTML = '<th>Terms / Documents</th>';
+            tfidfMatrix.querySelector('tbody').innerHTML = '';
+        }
+        
+        // Function to visualize TF-IDF calculation
+        function visualizeTFIDF() {
+            // Get input text
+            const text = userInput.value || "linear algebra helps understand text";
+            
+            // Preprocess text
+            const tokens = preprocessText(text);
+            
+            // Display processed tokens
+            processedTokens.innerHTML = '<p>Preprocessed tokens:</p>';
+            const tokensHtml = tokens.map(token => `<span class="token">${token}</span>`).join(' ');
+            processedTokens.innerHTML += tokensHtml;
+            
+            // Count term occurrences
+            const termCounts = countTerms(tokens);
+            const totalTerms = tokens.length;
+            
+            // Calculate TF with sublinear scaling
+            const tf = calculateTF(termCounts, totalTerms);
+            
+            // Display TF calculations
+            tfCalculations.innerHTML = '';
+            for (const term in tf) {
+                tfCalculations.innerHTML += `
+                    <div class="calculation-result">
+                        TF("${term}") = 1 + log(${termCounts[term]}) = ${tf[term].toFixed(4)}
+                    </div>
+                `;
+            }
+            
+            // Show TF step with animation
+            termFreqStep.classList.add('visible');
+            
+            // Calculate IDF for each term
+            const idf = {};
+            for (const term in tf) {
+                idf[term] = calculateIDF(term, documents);
+            }
+            
+            // Delay to show IDF calculations
+            setTimeout(() => {
+                // Display IDF calculations
+                idfCalculations.innerHTML = '';
+                for (const term in idf) {
+                    const docsWithTerm = documents.filter(doc => doc.includes(term)).length;
+                    idfCalculations.innerHTML += `
+                        <div class="calculation-result">
+                            IDF("${term}") = log((${documents.length + 1})/(${docsWithTerm + 1})) + 1 = ${idf[term].toFixed(4)}
+                        </div>
+                    `;
+                }
+                
+                // Show IDF step with animation
+                idfStep.classList.add('visible');
+                
+                // Calculate TF-IDF
+                const tfidf = calculateTFIDF(tf, idf);
+                
+                // Delay to show TF-IDF calculations
+                setTimeout(() => {
+                    // Display TF-IDF calculations
+                    tfidfCalculations.innerHTML = '';
+                    for (const term in tfidf) {
+                        tfidfCalculations.innerHTML += `
+                            <div class="calculation-result">
+                                TF-IDF("${term}") = ${tf[term].toFixed(4)} × ${idf[term].toFixed(4)} = ${tfidf[term].toFixed(4)}
+                            </div>
+                        `;
+                    }
+                    
+                    // Show TF-IDF step with animation
+                    tfidfStep.classList.add('visible');
+                    
+                    // Delay to show matrix and vector visualization
+                    setTimeout(() => {
+                        // Create TF-IDF matrix
+                        const headerRow = tfidfMatrix.querySelector('thead tr');
+                        headerRow.innerHTML = '<th>Terms / Documents</th>';
+                        
+                        // Add document headers
+                        for (let i = 0; i < documents.length; i++) {
+                            const docHeader = document.createElement('th');
+                            docHeader.textContent = `Doc ${i + 1}`;
+                            headerRow.appendChild(docHeader);
+                        }
+                        
+                        // Add query header
+                        const queryHeader = document.createElement('th');
+                        queryHeader.textContent = 'Your Query';
+                        headerRow.appendChild(queryHeader);
+                        
+                        // Create matrix body
+                        const matrixBody = tfidfMatrix.querySelector('tbody');
+                        matrixBody.innerHTML = '';
+                        
+                        // Add rows for relevant terms
+                        const relevantTerms = new Set([...Object.keys(tfidf), ...vocabulary.filter(term => documents.some(doc => doc.includes(term)))]);
+                        
+                        for (const term of relevantTerms) {
+                            const row = document.createElement('tr');
+                            
+                            // Term cell
+                            const termCell = document.createElement('td');
+                            termCell.textContent = term;
+                            if (tfidf[term]) {
+                                termCell.className = 'highlight';
+                            }
+                            row.appendChild(termCell);
+                            
+                            // Document cells
+                            for (const doc of documents) {
+                                const docCell = document.createElement('td');
+                                if (doc.includes(term)) {
+                                    // Simplified TF-IDF calculation for demo
+                                    const docTokens = doc.split(' ');
+                                    const docTermCount = docTokens.filter(t => t === term).length;
+                                    const docTf = 1 + Math.log(docTermCount);
+                                    const docIdf = idf[term] || calculateIDF(term, documents);
+                                    const docTfidf = docTf * docIdf;
+                                    
+                                    docCell.textContent = docTfidf.toFixed(2);
+                                    
+                                    if (tfidf[term] && doc.includes(term)) {
+                                        docCell.className = 'highlight';
+                                    }
+                                } else {
+                                    docCell.textContent = '0';
+                                }
+                                row.appendChild(docCell);
+                            }
+                            
+                            // Query cell
+                            const queryCell = document.createElement('td');
+                            if (tfidf[term]) {
+                                queryCell.textContent = tfidf[term].toFixed(2);
+                                queryCell.className = 'highlight';
+                            } else {
+                                queryCell.textContent = '0';
+                            }
+                            row.appendChild(queryCell);
+                            
+                            matrixBody.appendChild(row);
+                        }
+                        
+                        // Show matrix container
+                        matrixContainer.style.display = 'block';
+                        
+                        // Create TF-IDF vector visualization
+                        tfidfVectorContent.innerHTML = '';
+                        
+                        // Sort terms by TF-IDF value for better visualization
+                        const sortedTerms = Object.entries(tfidf).sort((a, b) => b[1] - a[1]);
+                        
+                        for (const [term, value] of sortedTerms) {
+                            const row = document.createElement('div');
+                            row.className = 'vector-row';
+                            
+                            // Scale for visualization (maximum will be 100%)
+                            const maxTfidf = sortedTerms[0][1];
+                            const scaledWidth = (value / maxTfidf) * 100;
+                            
+                            row.innerHTML = `
+                                <div class="vector-label">${term}</div>
+                                <div class="vector-value">
+                                    <div class="vector-bar" style="width: ${scaledWidth}%"></div>
+                                    <div class="vector-text">${value.toFixed(4)}</div>
+                                </div>
+                            `;
+                            
+                            tfidfVectorContent.appendChild(row);
+                        }
+                        
+                        // Show vector visualization
+                        tfidfVectorVisualization.style.display = 'block';
+                        
+                        // Animate the bars
+                        setTimeout(() => {
+                            const bars = document.querySelectorAll('.vector-bar');
+                            bars.forEach(bar => {
+                                const width = bar.style.width;
+                                bar.style.width = '0';
+                                setTimeout(() => {
+                                    bar.style.transform = `scaleX(${parseInt(width) / 100})`;
+                                }, 100);
+                            });
+                        }, 300);
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }
+        
+        // Event listeners
+        processBtn.addEventListener('click', visualizeTFIDF);
+        resetBtn.addEventListener('click', resetVisualization);
+        
+        // Initial processing on page load
+        window.addEventListener('load', () => {
+            setTimeout(visualizeTFIDF, 500);
+        });
+    </script>
+</body>
+</html>
